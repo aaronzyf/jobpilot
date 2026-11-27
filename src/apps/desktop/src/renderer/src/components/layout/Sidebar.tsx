@@ -1,4 +1,4 @@
-import { Check, Plus, Settings2, Users2 } from 'lucide-react'
+import { Check, Settings2, Users2 } from 'lucide-react'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { navItems } from '@/lib/nav'
 import { useApp } from '@/lib/store'
@@ -130,10 +130,9 @@ export function Sidebar() {
           </span>
           <button
             onClick={() => go('candidates')}
-            className="flex h-4 w-4 items-center justify-center rounded text-fg-subtle hover:bg-surface-3 hover:text-fg"
-            title={t('sidebar.newCandidate')}
+            className="text-[10.5px] text-fg-subtle hover:text-fg-muted"
           >
-            <Plus size={11} />
+            {t('sidebar.manage')}
           </button>
         </div>
 

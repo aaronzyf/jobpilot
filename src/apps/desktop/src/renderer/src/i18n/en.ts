@@ -98,7 +98,6 @@ export const en: Dict = {
     notMatched: 'Awaiting first scan',
     matchPaused: 'Background matching paused',
     matchStatus: '{n} profile{p} matching in background',
-    newCandidate: 'New candidate',
     configureCandidate: 'Configure {name}',
     appliedPending: '{applied} applied · {pending} to review',
     switchCandidate: 'Switch candidate',

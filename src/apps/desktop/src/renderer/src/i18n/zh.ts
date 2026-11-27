@@ -96,7 +96,6 @@ export const zh = {
     notMatched: '等待首次扫描',
     matchPaused: '后台匹配已暂停',
     matchStatus: '{n} 个档案后台匹配中',
-    newCandidate: '新建求职者',
     configureCandidate: '配置 {name}',
     appliedPending: '{applied} 已投 · {pending} 待确认',
     switchCandidate: '切换求职者',
