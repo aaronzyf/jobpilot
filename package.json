@@ -1,0 +1,17 @@
+{
+  "name": "jobpilot",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.3",
+  "scripts": {
+    "dev": "pnpm --filter @jobpilot/desktop dev",
+    "build": "pnpm --filter @jobpilot/desktop build",
+    "typecheck": "pnpm --filter @jobpilot/desktop typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  }
+}

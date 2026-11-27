@@ -1,0 +1,44 @@
+node_modules/
+.pnpm-store/
+
+# 构建产物
+dist/
+out/
+build/
+release/
+*.tsbuildinfo
+
+# Electron 打包
+dist-electron/
+app.asar
+app.asar.unpacked/
+
+# Playwright 浏览器与运行时
+.playwright/
+playwright-report/
+test-results/
+
+# 本地数据（开发期）
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+.userdata/
+
+# 环境与密钥
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+
+# 日志与系统文件
+*.log
+logs/
+.DS_Store
+_tmp_*
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea/
