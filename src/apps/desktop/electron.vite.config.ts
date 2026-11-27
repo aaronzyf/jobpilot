@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { appVersion } from './scripts/app-version'
 
 /** 领域包以源码形式被引用，避免额外的构建步骤 */
 const coreSrc = resolve(process.cwd(), '../../packages/core/src')
@@ -25,7 +26,8 @@ export default defineConfig({
         }
       }
     },
-    plugins: [react(), tailwindcss()],
+    // 末位放构建钩子：dev 启动与 build 时把 package.json 的版本同步到生成文件
+    plugins: [react(), tailwindcss(), appVersion()],
     resolve: {
       alias: {
         '@': resolve(process.cwd(), 'src/renderer/src'),
