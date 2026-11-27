@@ -79,6 +79,7 @@ export const zh = {
     systemDesc: '跟随操作系统的浅色 / 深色设置',
     lightDesc: '始终使用浅色界面',
     darkDesc: '始终使用深色界面',
+    switchTo: '切换到{name}模式',
     hint: '只保存在本机，换设备不影响',
     now: '当前：{v}'
   },

@@ -81,6 +81,7 @@ export const en: Dict = {
     systemDesc: 'Follow the operating system light / dark setting',
     lightDesc: 'Always use the light theme',
     darkDesc: 'Always use the dark theme',
+    switchTo: 'Switch to {name} mode',
     hint: 'Stored on this device only',
     now: 'Now: {v}'
   },

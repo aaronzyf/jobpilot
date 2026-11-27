@@ -1,7 +1,6 @@
 import { Check, Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
-import { MenuItem, Popover } from '@/components/ui/overlay'
 import { useT, type TKey } from '@/i18n'
-import { THEME_MODES, useTheme, type ThemeMode } from '@/lib/theme'
+import { THEME_MODES, useTheme, type Theme, type ThemeMode } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
 const ICON: Record<ThemeMode, LucideIcon> = { system: Monitor, light: Sun, dark: Moon }
@@ -20,48 +19,29 @@ const DESC: Record<ThemeMode, TKey> = {
 }
 
 /**
- * 顶栏的主题切换：图标反映当前选择（跟随系统 / 浅色 / 深色），点开是三选一。
- * 不做成「一按就切」的两态按钮，是因为默认态是「跟随系统」，需要一个显式的落点。
+ * 顶栏主题按钮：按当前生效主题直接切到相反的浅 / 深色。
+ * 图标显示的是点击后的目标状态，设置页仍保留「跟随系统」三选一。
  */
 export function ThemeSwitch({ className }: { className?: string }) {
-  const { mode, setMode } = useTheme()
+  const { theme, setMode } = useTheme()
   const t = useT()
-  const Icon = ICON[mode]
+  const next: Theme = theme === 'dark' ? 'light' : 'dark'
+  const Icon = ICON[next]
+  const label = t('theme.switchTo', { name: t(next === 'dark' ? 'theme.dark' : 'theme.light') })
 
   return (
-    <Popover
-      className="w-[168px]"
-      trigger={({ toggle }) => (
-        <button
-          onClick={toggle}
-          title={t('theme.label')}
-          aria-label={t('theme.label')}
-          data-theme-switch=""
-          className={cn(
-            'no-drag flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-3 hover:text-fg',
-            className
-          )}
-        >
-          <Icon size={14} strokeWidth={1.7} />
-        </button>
+    <button
+      onClick={() => setMode(next)}
+      title={label}
+      aria-label={label}
+      data-theme-switch=""
+      className={cn(
+        'no-drag flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-3 hover:text-fg',
+        className
       )}
     >
-      {THEME_MODES.map((m) => {
-        const ItemIcon = ICON[m]
-        return (
-          <MenuItem key={m} selected={mode === m} onClick={() => setMode(m)}>
-            <span className="flex items-center gap-2">
-              <ItemIcon
-                size={12}
-                strokeWidth={1.7}
-                className={mode === m ? 'text-accent' : 'text-fg-subtle'}
-              />
-              {t(LABEL[m])}
-            </span>
-          </MenuItem>
-        )
-      })}
-    </Popover>
+      <Icon size={14} strokeWidth={1.7} />
+    </button>
   )
 }
 
