@@ -18,8 +18,8 @@ app.asar.unpacked/
 playwright-report/
 test-results/
 
-# 本地验证资产（截图只留在本机，不同步到远程）
-screenshots/
+# 本地验证截图只留在本机；README 用的截图在 docs/screenshots/ 入库
+/screenshots/
 
 # 本地数据（开发期）
 *.db
