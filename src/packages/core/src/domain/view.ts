@@ -203,7 +203,80 @@ export interface MetricsView {
   hourly: HourlyPointView[]
 }
 
-/** 一次拉全，渲染层负责按页切片。数据量小（岗位百级），比逐页请求省事且没有加载态闪烁 */
+// ---------------------------------------------------------------- 按需读取
+
+/** 页面标识。主进程按它决定要执行哪几组查询，不传业务文案 */
+export type ViewKey =
+  | 'dashboard'
+  | 'jobs'
+  | 'applications'
+  | 'messages'
+  | 'interviews'
+  | 'candidates'
+  | 'settings'
+
+/** 岗位页筛选。条件在主进程落成 SQL WHERE，不再只留在渲染层内存里 */
+export interface JobViewFilter {
+  workModes?: RemoteType[]
+  region?: 'all' | 'cn' | 'global'
+  employment?: 'all' | 'fulltime' | 'contract'
+  minScore?: number
+  postedWithin?: number
+  keyword?: string
+  excludeOutsource?: boolean
+  visa?: boolean
+  /** 分数与档位依赖当前求职者，筛查时一起带上 */
+  candidateId?: string
+  auto?: number
+  reject?: number
+  verdict?: Verdict | 'all'
+}
+
+/**
+ * 一次读取的查询条件。
+ *
+ * `tab` / `q` / `scope` 是列表页工具条的通用参数；
+ * `jobs` 只给岗位页用，其余页面忽略。
+ */
+export interface ViewQuery {
+  page: ViewKey
+  candidateId?: string
+  tab?: string
+  q?: string
+  scope?: 'all' | 'me'
+  jobs?: JobViewFilter
+}
+
+/** 侧栏常驻数据：换页也要保持准确，所以不跟着页面筛选走 */
+export interface SidebarSnapshot {
+  candidates: CandidateView[]
+  sources: SourceView[]
+  activeCandidateId: string
+  unreadTotal: number
+  pendingInterviews: number
+  revision: number
+}
+
+/** 当前页面的数据切片。不属于本页的字段给空值 */
+export interface ViewSnapshot {
+  jobs: JobView[]
+  applications: ApplicationView[]
+  conversations: ConversationView[]
+  interviews: InterviewView[]
+  savedViews: SavedViewView[]
+  llmUsage: LlmUsageView[]
+  metrics: MetricsView
+  /** 列表页筛选命中的主键，页面据此收窄行；全量数组留给标签计数 */
+  filterIds?: string[]
+}
+
+/** 读或写之后回传的完整结果：侧栏 + 当前页 */
+export interface LoadResult {
+  sidebar: SidebarSnapshot
+  view: ViewSnapshot
+}
+
+/** 兼容旧调用：整份快照仍可用于一次性读取（设置页手动刷新等） */
 export interface AppSnapshot {
   candidates: CandidateView[]
   jobs: JobView[]

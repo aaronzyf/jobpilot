@@ -66,6 +66,8 @@ export const zh = {
     toastSyncStart: '开始同步 5 个渠道，已存在的岗位会跳过',
     toastSyncDone: '同步完成：新增 12 个岗位，去重跳过 34 个',
     sqlLog: '打开 SQL 日志窗口',
+    reload: '重新读取本页',
+    toastReload: '已重新读取当前页面',
     language: '界面语言'
   },
 

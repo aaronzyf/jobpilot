@@ -75,7 +75,9 @@ export function Interviews() {
     interviews,
     candidates,
     jobs,
-    sources
+    sources,
+    setViewFilter,
+    filterIds
   } = useApp()
   const { lang, t } = useI18n()
 
@@ -90,6 +92,11 @@ export function Interviews() {
   const [selectedId, setSelectedId] = useState(
     () => (interviews.find((i) => i.status === 'invited') ?? interviews[0])?.id ?? ''
   )
+
+  // 标签与搜索都下发到主进程，重新执行带条件的查询
+  useEffect(() => {
+    setViewFilter({ tab, q })
+  }, [tab, q, setViewFilter])
 
   const statusOf = (i: Interview): InterviewStatus => interviewStatus[i.id] ?? i.status
 
@@ -135,6 +142,7 @@ export function Interviews() {
   }
 
   const rows = ordered.filter((i) => {
+    if (filterIds !== null && !filterIds.includes(i.id)) return false
     if (!matches(i, tab)) return false
     if (!q.trim()) return true
     const job = jobs.find((j) => j.id === i.jobId)

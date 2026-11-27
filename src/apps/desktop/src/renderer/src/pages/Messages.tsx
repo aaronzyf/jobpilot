@@ -14,8 +14,21 @@ import { cn } from '@/lib/utils'
 type Tab = 'all' | 'unread' | 'interview'
 
 export function Messages() {
-  const { go, toast, readIds, markRead, markAllRead, focusConvId, conversations, jobs, candidates, sources, sendMessage } =
-    useApp()
+  const {
+    go,
+    toast,
+    readIds,
+    markRead,
+    markAllRead,
+    focusConvId,
+    conversations,
+    jobs,
+    candidates,
+    sources,
+    sendMessage,
+    setViewFilter,
+    filterIds
+  } = useApp()
   const { lang, t } = useI18n()
 
   const [tab, setTab] = useState<Tab>('all')
@@ -27,6 +40,11 @@ export function Messages() {
   const sourceName = (id: string) => sources.find((s) => s.id === id)?.name ?? id
   const unreadOf = (id: string, n: number) => (readIds.includes(id) ? 0 : n)
 
+  // 工具条条件变化 → 重新查库；SQL 命中集只收窄列表，标签计数仍看全量
+  useEffect(() => {
+    setViewFilter({ tab, q })
+  }, [tab, q, setViewFilter])
+
   // 会话按最近一条消息排序，与是否被筛选无关
   const ordered = useMemo(() => {
     return [...conversations]
@@ -35,6 +53,7 @@ export function Messages() {
   }, [conversations])
 
   const rows = ordered.filter(({ conv, last }) => {
+    if (filterIds !== null && !filterIds.includes(conv.id)) return false
     if (tab === 'unread' && unreadOf(conv.id, conv.unread) === 0) return false
     if (tab === 'interview' && conv.stage !== 'interview') return false
     if (q.trim()) {

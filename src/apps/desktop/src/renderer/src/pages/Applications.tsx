@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowUpRight,
   CheckCheck,
@@ -27,7 +27,16 @@ import type { ApplicationStatus } from '@core'
 type Tab = ApplicationStatus | 'all'
 
 export function Applications() {
-  const { candidate, go, toast, applications, candidates, jobs } = useApp()
+  const {
+    candidate,
+    go,
+    toast,
+    applications,
+    candidates,
+    jobs,
+    setViewFilter,
+    filterIds
+  } = useApp()
   const { t, lang } = useI18n()
   const wide = useMediaQuery('(min-width: 1220px)')
   const [tab, setTab] = useState<Tab>('all')
@@ -36,8 +45,14 @@ export function Applications() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mailApp, setMailApp] = useState<ApplicationRow | null>(null)
 
+  // 筛选条件变化 → 重新查库，标签数量仍按全量投递算
+  useEffect(() => {
+    setViewFilter({ tab, scope, q })
+  }, [tab, scope, q, setViewFilter])
+
   const rows = useMemo(() => {
     return applications.filter((a) => {
+      if (filterIds !== null && !filterIds.includes(a.id)) return false
       if (tab !== 'all' && a.status !== tab) return false
       if (scope === 'me' && a.candidateId !== candidate.id) return false
       if (q.trim()) {
@@ -47,7 +62,7 @@ export function Applications() {
       }
       return true
     })
-  }, [tab, scope, q, candidate.id, applications, jobs])
+  }, [tab, scope, q, candidate.id, applications, jobs, filterIds])
 
   const count = (s: ApplicationStatus) => applications.filter((a) => a.status === s).length
   const selected = applications.find((a) => a.id === selectedId) ?? null

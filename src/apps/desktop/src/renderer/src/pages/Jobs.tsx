@@ -44,7 +44,18 @@ const allColumns = {
 type ColumnKey = keyof typeof allColumns
 
 export function Jobs() {
-  const { candidate, focusJobId, clearFocusJob, go, toast, jobs, savedIds, toggleSaved } = useApp()
+  const {
+    candidate,
+    candidateId,
+    focusJobId,
+    clearFocusJob,
+    go,
+    toast,
+    jobs,
+    savedIds,
+    toggleSaved,
+    setViewFilter
+  } = useApp()
   const { t, lang } = useI18n()
   const wide = useMediaQuery('(min-width: 1260px)')
   const [tab, setTab] = useState<Tab>('all')
@@ -62,6 +73,33 @@ export function Jobs() {
       clearFocusJob()
     }
   }, [focusJobId, clearFocusJob])
+
+  // 筛选条件变化就重新查库：岗位列表由 SQL 下推筛选，标签计数仍用返回的全量
+  useEffect(() => {
+    setViewFilter({
+      tab,
+      jobs: {
+        workModes: filters.workModes,
+        region: filters.region,
+        employment: filters.employment,
+        minScore: filters.minScore,
+        postedWithin: filters.postedWithin,
+        keyword: filters.keyword,
+        excludeOutsource: filters.excludeOutsource,
+        visa: filters.visa,
+        candidateId,
+        auto: candidate.thresholds.auto,
+        reject: candidate.thresholds.reject
+      }
+    })
+  }, [
+    tab,
+    filters,
+    candidateId,
+    candidate.thresholds.auto,
+    candidate.thresholds.reject,
+    setViewFilter
+  ])
 
   const rows = useMemo(() => {
     const base = jobs.map((job) => ({

@@ -5,6 +5,7 @@ import { navItems } from '@/lib/nav'
 import { useApp } from '@/lib/store'
 import { useT } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { APP_VERSION } from '@/generated/version'
 
 export function Sidebar() {
   const {
@@ -13,24 +14,15 @@ export function Sidebar() {
     candidate,
     candidateId,
     setCandidateId,
-    readIds,
-    interviewStatus,
+    unreadTotal,
+    pendingInterviews,
     toast,
     candidates,
-    conversations,
-    interviews,
     sources
   } = useApp()
   const t = useT()
   const needLogin = sources.filter((s) => s.state === 'error').length
   const running = sources.filter((s) => s.state === 'running').length
-  const unread = conversations.reduce(
-    (n, c) => n + (readIds.includes(c.id) ? 0 : c.unread),
-    0
-  )
-  const pendingInterviews = interviews.filter(
-    (i) => (interviewStatus[i.id] ?? i.status) === 'invited'
-  ).length
 
   return (
     <aside className="flex w-[208px] shrink-0 flex-col border-r border-line bg-surface">
@@ -40,7 +32,9 @@ export function Sidebar() {
             j
           </div>
           <span className="text-[13px] font-medium tracking-[-0.01em]">jobpilot</span>
-          <span className="rounded bg-surface-3 px-1 text-[9.5px] leading-4 text-fg-subtle">v0.1</span>
+          <span className="rounded bg-surface-3 px-1 text-[9.5px] leading-4 text-fg-subtle">
+            v{APP_VERSION}
+          </span>
         </div>
       </div>
 
@@ -69,7 +63,7 @@ export function Sidebar() {
                 // 沟通的未读数与邀约的待确认数都是活的，其它入口仍是 mock 里的静态数字
                 const live =
                   item.key === 'messages'
-                    ? unread
+                    ? unreadTotal
                     : item.key === 'interviews'
                       ? pendingInterviews
                       : null

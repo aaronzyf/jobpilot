@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import type { AppSnapshot, ApplicationStatus, InterviewStatus } from '@core'
+import type {
+  AppSnapshot,
+  ApplicationStatus,
+  InterviewStatus,
+  LoadResult,
+  ViewQuery
+} from '@core'
 
 /**
  * 渲染层只能通过这里访问数据。
@@ -13,20 +19,26 @@ const api = {
   setThemeMode: (mode: 'system' | 'light' | 'dark') => ipcRenderer.send('theme:set-mode', mode),
   db: {
     snapshot: (): Promise<AppSnapshot> => ipcRenderer.invoke('db:snapshot'),
-    markConversationRead: (id: string): Promise<AppSnapshot> =>
-      ipcRenderer.invoke('db:mark-conversation-read', id),
-    markAllRead: (): Promise<AppSnapshot> => ipcRenderer.invoke('db:mark-all-read'),
-    sendMessage: (conversationId: string, text: string): Promise<AppSnapshot> =>
-      ipcRenderer.invoke('db:send-message', conversationId, text),
-    setInterviewStatus: (id: string, status: InterviewStatus): Promise<AppSnapshot> =>
-      ipcRenderer.invoke('db:set-interview-status', id, status),
-    setJobSaved: (jobId: string, saved: boolean): Promise<AppSnapshot> =>
-      ipcRenderer.invoke('db:set-job-saved', jobId, saved),
-    setApplicationStatus: (id: string, status: ApplicationStatus): Promise<AppSnapshot> =>
-      ipcRenderer.invoke('db:set-application-status', id, status),
-    setActiveCandidate: (id: string): Promise<AppSnapshot> =>
-      ipcRenderer.invoke('db:set-active-candidate', id),
-    reset: (): Promise<AppSnapshot> => ipcRenderer.invoke('db:reset')
+    /** 按当前页面与筛选条件读取；返回侧栏 + 当前页数据 */
+    load: (query: ViewQuery): Promise<LoadResult> => ipcRenderer.invoke('db:load', query),
+    markConversationRead: (query: ViewQuery, id: string): Promise<LoadResult> =>
+      ipcRenderer.invoke('db:mark-conversation-read', query, id),
+    markAllRead: (query: ViewQuery): Promise<LoadResult> =>
+      ipcRenderer.invoke('db:mark-all-read', query),
+    sendMessage: (query: ViewQuery, conversationId: string, text: string): Promise<LoadResult> =>
+      ipcRenderer.invoke('db:send-message', query, conversationId, text),
+    setInterviewStatus: (query: ViewQuery, id: string, status: InterviewStatus): Promise<LoadResult> =>
+      ipcRenderer.invoke('db:set-interview-status', query, id, status),
+    setJobSaved: (query: ViewQuery, jobId: string, saved: boolean): Promise<LoadResult> =>
+      ipcRenderer.invoke('db:set-job-saved', query, jobId, saved),
+    setApplicationStatus: (
+      query: ViewQuery,
+      id: string,
+      status: ApplicationStatus
+    ): Promise<LoadResult> => ipcRenderer.invoke('db:set-application-status', query, id, status),
+    setActiveCandidate: (query: ViewQuery, id: string): Promise<LoadResult> =>
+      ipcRenderer.invoke('db:set-active-candidate', query, id),
+    reset: (query: ViewQuery): Promise<LoadResult> => ipcRenderer.invoke('db:reset', query)
   },
   /** SQL 日志窗口：采集一直在主进程跑，这里只负责开窗口和取缓冲 */
   sqlLog: {

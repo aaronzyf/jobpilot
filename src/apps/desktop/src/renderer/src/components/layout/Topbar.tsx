@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, Database, Languages, RefreshCw, Search } from 'lucide-react'
+import { Bell, Database, Languages, RefreshCw, RotateCw, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/misc'
 import { MenuItem, Popover } from '@/components/ui/overlay'
@@ -42,7 +42,7 @@ export function LanguageSwitch() {
 }
 
 export function Topbar() {
-  const { page, go, setPaletteOpen, toast } = useApp()
+  const { page, go, setPaletteOpen, toast, refresh } = useApp()
   const { t } = useI18n()
   const [syncing, setSyncing] = useState(false)
   const info = pageInfo[page]
@@ -89,14 +89,30 @@ export function Topbar() {
         </Button>
 
         <button
-          onClick={() => window.jobpilot.sqlLog.open()}
-          title={t('topbar.sqlLog')}
-          aria-label={t('topbar.sqlLog')}
-          data-sql-log
+          onClick={() => {
+            refresh()
+            toast(t('topbar.toastReload'), 'default')
+          }}
+          title={t('topbar.reload')}
+          aria-label={t('topbar.reload')}
+          data-reload
           className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-3 hover:text-fg"
         >
-          <Database size={14} strokeWidth={1.7} />
+          <RotateCw size={13.5} strokeWidth={1.7} />
         </button>
+
+        {/* SQL 日志是开发期调试工具，生产构建里连按钮都不输出 */}
+        {import.meta.env.DEV && (
+          <button
+            onClick={() => window.jobpilot.sqlLog.open()}
+            title={t('topbar.sqlLog')}
+            aria-label={t('topbar.sqlLog')}
+            data-sql-log
+            className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-3 hover:text-fg"
+          >
+            <Database size={14} strokeWidth={1.7} />
+          </button>
+        )}
 
         <span className="mx-0.5 h-4 w-px bg-line" />
         <ThemeSwitch />

@@ -85,6 +85,8 @@ let sqlLogWin: BrowserWindow | null = null
 
 /** SQL 日志窗口单例：已开着就聚焦，避免开一堆重复窗口 */
 function createSqlLogWindow(): void {
+  // 开发期调试工具，安装后的版本不开这个窗口
+  if (app.isPackaged) return
   if (sqlLogWin && !sqlLogWin.isDestroyed()) {
     sqlLogWin.focus()
     return

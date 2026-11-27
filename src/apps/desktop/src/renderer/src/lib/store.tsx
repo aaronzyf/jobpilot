@@ -13,10 +13,15 @@ import type {
   ApplicationStatus,
   InterviewStatus,
   JobView,
-  CandidateView
+  CandidateView,
+  LoadResult,
+  SidebarSnapshot,
+  ViewQuery,
+  ViewSnapshot
 } from '@core'
 import { useI18n } from '@/i18n'
 import type { NavKey } from '@/lib/nav'
+import { dbService } from '@/services/db'
 
 type ToastTone = 'default' | 'success' | 'warning' | 'danger'
 
@@ -26,37 +31,34 @@ interface Toast {
   tone: ToastTone
 }
 
-/**
- * 首屏渲染前的空快照。
- *
- * 有这一份，页面组件就不必到处写 `data?.jobs ?? []`：
- * 加载中拿到的是空数组，渲染出空列表，数据到了再整体替换。
- */
-const EMPTY: AppSnapshot = {
+const EMPTY_SIDEBAR: SidebarSnapshot = {
   candidates: [],
+  sources: [],
+  activeCandidateId: '',
+  unreadTotal: 0,
+  pendingInterviews: 0,
+  revision: 0
+}
+
+const EMPTY_VIEW: ViewSnapshot = {
   jobs: [],
   applications: [],
-  sources: [],
   conversations: [],
   interviews: [],
   savedViews: [],
   llmUsage: [],
-  metrics: { trend: [], commTrend: [], hourly: [] },
-  activeCandidateId: '',
-  revision: 0
+  metrics: { trend: [], commTrend: [], hourly: [] }
 }
 
+/** 只有页面真正用到的字段留在 AppState，页面不必知道数据分两次回来 */
 interface AppState {
-  /** 首屏数据是否就位 */
   ready: boolean
-  /** 加载失败时的原始错误信息，直接显示在占位屏上 */
   error: string | null
 
   page: NavKey
   go: (page: NavKey, jobId?: string, convId?: string) => void
   focusJobId: string | null
   clearFocusJob: () => void
-  /** 跨页跳转时指定要打开的会话，由沟通页消费 */
   focusConvId: string | null
 
   // ---------------------------------------------------------------- 数据
@@ -69,25 +71,32 @@ interface AppState {
   savedViews: AppSnapshot['savedViews']
   llmUsage: AppSnapshot['llmUsage']
   metrics: AppSnapshot['metrics']
+  /** 列表页筛选命中的 id；null 表示当前页没有下发筛选，不收窄 */
+  filterIds: string[] | null
+
+  /** 侧栏角标直接取全库统计，不受当前页筛选影响 */
+  unreadTotal: number
+  pendingInterviews: number
 
   candidateId: string
   candidate: CandidateView
   setCandidateId: (id: string) => void
 
-  /** 未读数已归零的会话。由数据派生，供页面统一判断 */
   readIds: string[]
   markRead: (ids: string[]) => void
   markAllRead: () => void
-  /** 邀约当前状态。直接照库里的值，写操作落库后自动更新 */
   interviewStatus: Record<string, InterviewStatus>
   setInterviewStatus: (id: string, status: InterviewStatus) => void
-  /** 已收藏的岗位 id */
   savedIds: string[]
   toggleSaved: (jobId: string) => void
   sendMessage: (conversationId: string, text: string) => void
   setApplicationStatus: (id: string, status: ApplicationStatus) => void
-  /** 清空并重新灌示例数据 */
   resetData: () => void
+
+  /** 页面上报自己的筛选条件；变化后自动重新查库 */
+  setViewFilter: (patch: Partial<ViewQuery>) => void
+  /** 手动重新读取当前页面 */
+  refresh: () => void
 
   paletteOpen: boolean
   setPaletteOpen: (open: boolean) => void
@@ -97,27 +106,45 @@ interface AppState {
 
 const Ctx = createContext<AppState | null>(null)
 
+/** 筛选条件没变就不重复发 IPC，避免输入框每次渲染都触发查询 */
+const sameQuery = (a: ViewQuery, b: ViewQuery): boolean =>
+  a.page === b.page &&
+  a.candidateId === b.candidateId &&
+  a.tab === b.tab &&
+  a.q === b.q &&
+  a.scope === b.scope &&
+  JSON.stringify(a.jobs ?? null) === JSON.stringify(b.jobs ?? null)
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n()
-  const [data, setData] = useState<AppSnapshot | null>(null)
+  const [sidebar, setSidebar] = useState<SidebarSnapshot | null>(null)
+  const [view, setView] = useState<ViewSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState<NavKey>('dashboard')
-  const [candidateId, setCandidateIdState] = useState('')
+  const [query, setQuery] = useState<ViewQuery>({ page: 'dashboard' })
+  /** 同页重复进入或手动刷新时，靠它强制再读一次 */
+  const [reloadKey, setReloadKey] = useState(0)
   const [focusJobId, setFocusJobId] = useState<string | null>(null)
   const [focusConvId, setFocusConvId] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const seq = useRef(0)
+  const queryRef = useRef(query)
+  queryRef.current = query
 
-  // ------------------------------------------------------------ 读
+  // ------------------------------------------------------------ 按页读
   useEffect(() => {
     let alive = true
-    window.jobpilot.db
-      .snapshot()
-      .then((snap) => {
+    setError(null)
+    dbService
+      .load(query)
+      .then((result) => {
         if (!alive) return
-        setData(snap)
-        setCandidateIdState((prev) => prev || snap.activeCandidateId)
+        setSidebar(result.sidebar)
+        setView(result.view)
+        setQuery((prev) =>
+          prev.candidateId ? prev : { ...prev, candidateId: result.sidebar.activeCandidateId }
+        )
       })
       .catch((e: unknown) => {
         if (alive) setError(e instanceof Error ? e.message : String(e))
@@ -125,35 +152,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false
     }
-  }, [])
+  }, [query, reloadKey])
 
-  /**
-   * 写操作的统一入口：主进程返回写完之后的新快照，直接整份替换。
-   * 不做乐观拼接——状态只有一份来源，界面不会出现「显示已读、库里还没读」。
-   */
-  const apply = useCallback(async (run: () => Promise<AppSnapshot | null>) => {
+  /** 写操作统一入口：落库后回传「侧栏 + 当前页」，不做乐观拼接 */
+  const apply = useCallback(async (run: (q: ViewQuery) => Promise<LoadResult | null>) => {
     try {
-      const next = await run()
-      if (next) setData(next)
+      const next = await run(queryRef.current)
+      if (next) {
+        setSidebar(next.sidebar)
+        setView(next.view)
+      }
     } catch (e) {
       console.error('[db]', e)
     }
   }, [])
 
-  const snapshot = data ?? EMPTY
+  const snapshotView = view ?? EMPTY_VIEW
+  const snapshotSidebar = sidebar ?? EMPTY_SIDEBAR
 
   const go = useCallback((next: NavKey, jobId?: string, convId?: string) => {
     setPage(next)
+    // 进页面就换一套查询条件，切页必然重新读库
+    setQuery((prev) => ({
+      ...prev,
+      page: next,
+      tab: undefined,
+      q: undefined,
+      scope: undefined,
+      jobs: undefined
+    }))
+    // 清掉上一页的筛选命中集，避免它误伤新页面第一帧
+    setView((prev) => (prev ? { ...prev, filterIds: undefined } : prev))
+    setReloadKey((k) => k + 1)
     setFocusJobId(jobId ?? null)
     setFocusConvId(convId ?? null)
   }, [])
 
   const clearFocusJob = useCallback(() => setFocusJobId(null), [])
 
+  const setViewFilter = useCallback((patch: Partial<ViewQuery>) => {
+    setQuery((prev) => {
+      const next = { ...prev, ...patch }
+      return sameQuery(prev, next) ? prev : next
+    })
+  }, [])
+
+  const refresh = useCallback(() => setReloadKey((k) => k + 1), [])
+
   const setCandidateId = useCallback(
     (id: string) => {
-      setCandidateIdState(id)
-      void apply(() => window.jobpilot.db.setActiveCandidate(id))
+      setQuery((prev) => ({ ...prev, candidateId: id }))
+      void apply((q) => dbService.setActiveCandidate(q, id))
     },
     [apply]
   )
@@ -162,7 +211,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (ids: string[]) => {
       // 串行发：并发写同一批消息时，后返回的快照可能覆盖前一次的已读结果
       void ids.reduce<Promise<void>>(
-        (chain, id) => chain.then(() => apply(() => window.jobpilot.db.markConversationRead(id))),
+        (chain, id) =>
+          chain.then(() => apply((q) => dbService.markConversationRead(q, id))),
         Promise.resolve()
       )
     },
@@ -170,40 +220,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
 
   const markAllRead = useCallback(() => {
-    void apply(() => window.jobpilot.db.markAllRead())
+    void apply((q) => dbService.markAllRead(q))
   }, [apply])
 
   const setInterviewStatus = useCallback(
     (id: string, status: InterviewStatus) => {
-      void apply(() => window.jobpilot.db.setInterviewStatus(id, status))
+      void apply((q) => dbService.setInterviewStatus(q, id, status))
     },
     [apply]
   )
 
   const toggleSaved = useCallback(
     (jobId: string) => {
-      const saved = snapshot.jobs.find((j) => j.id === jobId)?.saved ?? false
-      void apply(() => window.jobpilot.db.setJobSaved(jobId, !saved))
+      const saved = snapshotView.jobs.find((j) => j.id === jobId)?.saved ?? false
+      void apply((q) => dbService.setJobSaved(q, jobId, !saved))
     },
-    [apply, snapshot.jobs]
+    [apply, snapshotView.jobs]
   )
 
   const sendMessage = useCallback(
     (conversationId: string, text: string) => {
-      void apply(() => window.jobpilot.db.sendMessage(conversationId, text))
+      void apply((q) => dbService.sendMessage(q, conversationId, text))
     },
     [apply]
   )
 
   const setApplicationStatus = useCallback(
     (id: string, status: ApplicationStatus) => {
-      void apply(() => window.jobpilot.db.setApplicationStatus(id, status))
+      void apply((q) => dbService.setApplicationStatus(q, id, status))
     },
     [apply]
   )
 
   const resetData = useCallback(() => {
-    void apply(() => window.jobpilot.db.reset())
+    void apply((q) => dbService.reset(q))
   }, [apply])
 
   const toast = useCallback((text: string, tone: ToastTone = 'default') => {
@@ -214,54 +264,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 2400)
   }, [])
 
-  // 库里没有 active_candidate_id 时（比如刚灌完种子），落到第一位
   const effectiveCandidateId =
-    snapshot.candidates.find((c) => c.id === candidateId)?.id ??
-    snapshot.activeCandidateId ??
-    snapshot.candidates[0]?.id ??
+    snapshotSidebar.candidates.find((c) => c.id === query.candidateId)?.id ??
+    snapshotSidebar.activeCandidateId ??
+    snapshotSidebar.candidates[0]?.id ??
     ''
 
   const candidate =
-    snapshot.candidates.find((c) => c.id === effectiveCandidateId) ?? snapshot.candidates[0]
+    snapshotSidebar.candidates.find((c) => c.id === effectiveCandidateId) ??
+    snapshotSidebar.candidates[0]
 
   const readIds = useMemo(
-    () => snapshot.conversations.filter((c) => c.unread === 0).map((c) => c.id),
-    [snapshot.conversations]
+    () => snapshotView.conversations.filter((c) => c.unread === 0).map((c) => c.id),
+    [snapshotView.conversations]
   )
 
   const interviewStatus = useMemo(
     () =>
-      Object.fromEntries(snapshot.interviews.map((i) => [i.id, i.status])) as Record<
+      Object.fromEntries(snapshotView.interviews.map((i) => [i.id, i.status])) as Record<
         string,
         InterviewStatus
       >,
-    [snapshot.interviews]
+    [snapshotView.interviews]
   )
 
   const savedIds = useMemo(
-    () => snapshot.jobs.filter((j) => j.saved).map((j) => j.id),
-    [snapshot.jobs]
+    () => snapshotView.jobs.filter((j) => j.saved).map((j) => j.id),
+    [snapshotView.jobs]
   )
 
   const value = useMemo<AppState | null>(() => {
     if (!candidate) return null
     return {
-      ready: data !== null,
+      ready: sidebar !== null && view !== null,
       error,
       page,
       go,
       focusJobId,
       clearFocusJob,
       focusConvId,
-      jobs: snapshot.jobs,
-      candidates: snapshot.candidates,
-      applications: snapshot.applications,
-      sources: snapshot.sources,
-      conversations: snapshot.conversations,
-      interviews: snapshot.interviews,
-      savedViews: snapshot.savedViews,
-      llmUsage: snapshot.llmUsage,
-      metrics: snapshot.metrics,
+      jobs: snapshotView.jobs,
+      candidates: snapshotSidebar.candidates,
+      applications: snapshotView.applications,
+      sources: snapshotSidebar.sources,
+      conversations: snapshotView.conversations,
+      interviews: snapshotView.interviews,
+      savedViews: snapshotView.savedViews,
+      llmUsage: snapshotView.llmUsage,
+      metrics: snapshotView.metrics,
+      filterIds: snapshotView.filterIds ?? null,
+      unreadTotal: snapshotSidebar.unreadTotal,
+      pendingInterviews: snapshotSidebar.pendingInterviews,
       candidateId: effectiveCandidateId,
       candidate,
       setCandidateId,
@@ -275,20 +328,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       sendMessage,
       setApplicationStatus,
       resetData,
+      setViewFilter,
+      refresh,
       paletteOpen,
       setPaletteOpen,
       toasts,
       toast
     }
   }, [
-    data,
+    sidebar,
+    view,
     error,
     page,
     go,
     focusJobId,
     clearFocusJob,
     focusConvId,
-    snapshot,
+    snapshotView,
+    snapshotSidebar,
     effectiveCandidateId,
     candidate,
     setCandidateId,
@@ -302,6 +359,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sendMessage,
     setApplicationStatus,
     resetData,
+    setViewFilter,
+    refresh,
     paletteOpen,
     toasts,
     toast

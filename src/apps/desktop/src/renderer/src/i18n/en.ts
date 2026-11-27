@@ -68,6 +68,8 @@ export const en: Dict = {
     toastSyncStart: 'Syncing 5 sources — existing jobs will be skipped',
     toastSyncDone: 'Sync complete: 12 new jobs, 34 duplicates skipped',
     sqlLog: 'Open SQL log window',
+    reload: 'Reload this page',
+    toastReload: 'Current page reloaded',
     language: 'Language'
   },
 
