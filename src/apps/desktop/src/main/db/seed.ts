@@ -77,6 +77,9 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       smtpHost: 'smtp.gmail.com',
       smtpPort: 465,
       smtpVerified: true,
+      pop3Host: 'pop.gmail.com',
+      pop3Port: 995,
+      pop3Enabled: true,
       factProjects: 7,
       factExperiences: 3,
       factSkills: 24
@@ -101,6 +104,9 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       smtpHost: null,
       smtpPort: null,
       smtpVerified: false,
+      pop3Host: null,
+      pop3Port: null,
+      pop3Enabled: false,
       factProjects: 5,
       factExperiences: 2,
       factSkills: 18
@@ -125,6 +131,9 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       smtpHost: 'smtp.163.com',
       smtpPort: 465,
       smtpVerified: false,
+      pop3Host: 'pop.163.com',
+      pop3Port: 995,
+      pop3Enabled: false,
       factProjects: 9,
       factExperiences: 4,
       factSkills: 31

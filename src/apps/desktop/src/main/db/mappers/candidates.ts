@@ -51,6 +51,10 @@ export function toCandidateViews(
       c.smtpHost && c.smtpPort
         ? { host: c.smtpHost, port: c.smtpPort, verified: c.smtpVerified }
         : null,
+    pop3:
+      c.pop3Host && c.pop3Port
+        ? { host: c.pop3Host, port: c.pop3Port, enabled: c.pop3Enabled }
+        : null,
     note: c.note,
     languages: c.languages,
     thresholds: { auto: c.thresholdAuto, reject: c.thresholdReject },

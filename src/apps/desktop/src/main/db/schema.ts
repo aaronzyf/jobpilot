@@ -39,6 +39,10 @@ export const candidates = sqliteTable('candidates', {
   smtpHost: text('smtp_host'),
   smtpPort: integer('smtp_port'),
   smtpVerified: integer('smtp_verified', { mode: 'boolean' }).notNull().default(false),
+  /** POP3 收信配置：用于拉取招聘方回复。host/port 为空表示未配置 */
+  pop3Host: text('pop3_host'),
+  pop3Port: integer('pop3_port'),
+  pop3Enabled: integer('pop3_enabled', { mode: 'boolean' }).notNull().default(false),
   /** 简历事实库规模。真实实现里应来自 fact_base 表，这里先按求职者汇总 */
   factProjects: integer('fact_projects').notNull().default(0),
   factExperiences: integer('fact_experiences').notNull().default(0),

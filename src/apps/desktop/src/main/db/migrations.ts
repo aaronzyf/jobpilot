@@ -1,5 +1,6 @@
 import init0000 from '../../../drizzle/0000_smiling_zuras.sql?raw'
 import candidateMatching0001 from '../../../drizzle/0001_candidate_matching.sql?raw'
+import pop3MailConfig0002 from '../../../drizzle/0002_pop3_mail_config.sql?raw'
 
 /**
  * 迁移清单。
@@ -10,5 +11,6 @@ import candidateMatching0001 from '../../../drizzle/0001_candidate_matching.sql?
  */
 export const migrations: { id: string; sql: string }[] = [
   { id: '0000_smiling_zuras', sql: init0000 },
-  { id: '0001_candidate_matching', sql: candidateMatching0001 }
+  { id: '0001_candidate_matching', sql: candidateMatching0001 },
+  { id: '0002_pop3_mail_config', sql: pop3MailConfig0002 }
 ]

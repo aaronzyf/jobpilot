@@ -43,6 +43,8 @@ export interface CandidateView {
   resumePages: number
   email: string
   smtp: { host: string; port: number; verified: boolean } | null
+  /** POP3 收信配置；未配置时为 null */
+  pop3: { host: string; port: number; enabled: boolean } | null
   note: string
   languages: string[]
   thresholds: { auto: number; reject: number }
