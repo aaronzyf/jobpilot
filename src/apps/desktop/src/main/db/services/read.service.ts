@@ -16,6 +16,7 @@ import {
   toInterviewViews,
   toJobViews,
   toLlmUsageViews,
+  toMatchRunViews,
   toMetrics,
   toSavedViewViews,
   toSourceViews
@@ -37,6 +38,7 @@ import {
   listJobDiscovery,
   listJobScores,
   listLlmUsage,
+  listMatchRuns,
   listMessages,
   listMessagesSince,
   listSavedViews,
@@ -107,6 +109,7 @@ export function readSidebar(handle: DatabaseHandle): SidebarSnapshot {
       active && candidates.some((c) => c.id === active) ? active : (candidates[0]?.id ?? ''),
     unreadTotal: countUnreadMessages(handle),
     pendingInterviews: countPendingInterviews(handle),
+    matchRuns: toMatchRunViews(listMatchRuns(handle)),
     revision: getSetting<number>(handle, 'revision') ?? 0
   }
 }
@@ -214,6 +217,7 @@ export function readSnapshot(handle: DatabaseHandle): AppSnapshot {
     metrics: metricsOf(handle),
     activeCandidateId:
       active && candidates.some((c) => c.id === active) ? active : (candidates[0]?.id ?? ''),
+    matchRuns: toMatchRunViews(listMatchRuns(handle)),
     revision: getSetting<number>(handle, 'revision') ?? 0
   }
 }

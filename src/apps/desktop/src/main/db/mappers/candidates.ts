@@ -55,6 +55,7 @@ export function toCandidateViews(
     languages: c.languages,
     thresholds: { auto: c.thresholdAuto, reject: c.thresholdReject },
     dailyCap: c.dailyCap,
+    enabled: c.enabled,
     stats: stats.get(c.id) ?? { applied: 0, replied: 0, pending: 0, interview: 0 },
     resumeFacts: {
       projects: c.factProjects,

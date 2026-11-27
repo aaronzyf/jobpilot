@@ -79,6 +79,25 @@ export function listJobScores(handle: DatabaseHandle): JobScoreRow[] {
   return handle.db.select().from(schema.jobScores).all()
 }
 
+/** 开放岗位，后台匹配按这份清单扫描 */
+export function listOpenJobs(handle: DatabaseHandle): JobRow[] {
+  return handle.db
+    .select()
+    .from(schema.jobs)
+    .where(eq(schema.jobs.status, 'open'))
+    .orderBy(schema.jobs.postedAt)
+    .all()
+}
+
+/** 后台新算出的分数。同一个人同一岗位已存在时不覆盖 */
+export function insertJobScore(handle: DatabaseHandle, row: JobScoreRow): void {
+  handle.db
+    .insert(schema.jobScores)
+    .values(row)
+    .onConflictDoNothing()
+    .run()
+}
+
 export function listBookmarks(handle: DatabaseHandle): BookmarkRow[] {
   return handle.db.select().from(schema.jobBookmarks).all()
 }

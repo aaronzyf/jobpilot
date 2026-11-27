@@ -44,6 +44,8 @@ export const candidates = sqliteTable('candidates', {
   factExperiences: integer('fact_experiences').notNull().default(0),
   factSkills: integer('fact_skills').notNull().default(0),
   archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
+  /** 禁用后不参与后台匹配；历史分数与投递记录保留 */
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
 })
@@ -144,6 +146,19 @@ export const jobScores = sqliteTable(
     index('idx_scores_candidate').on(t.candidateId)
   ]
 )
+
+/**
+ * 后台匹配的运行摘要。每位启用档案一行，记录最近一轮扫了多少岗位、补了几条分数。
+ * 禁用档案不再刷新这里，旧记录保留供回看。
+ */
+export const matchRuns = sqliteTable('match_runs', {
+  candidateId: text('candidate_id')
+    .primaryKey()
+    .references(() => candidates.id, { onDelete: 'cascade' }),
+  scanned: integer('scanned').notNull().default(0),
+  added: integer('added').notNull().default(0),
+  at: integer('at', { mode: 'timestamp_ms' }).notNull()
+})
 
 /** 岗位收藏。属于「这个人想留着看」的动作，与打分解耦 */
 export const jobBookmarks = sqliteTable('job_bookmarks', {

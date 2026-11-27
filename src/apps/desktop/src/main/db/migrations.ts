@@ -1,4 +1,5 @@
 import init0000 from '../../../drizzle/0000_smiling_zuras.sql?raw'
+import candidateMatching0001 from '../../../drizzle/0001_candidate_matching.sql?raw'
 
 /**
  * 迁移清单。
@@ -8,5 +9,6 @@ import init0000 from '../../../drizzle/0000_smiling_zuras.sql?raw'
  * 也不用约定 asar 之外的资源路径。新增迁移时在末尾追加一项，顺序即执行顺序。
  */
 export const migrations: { id: string; sql: string }[] = [
-  { id: '0000_smiling_zuras', sql: init0000 }
+  { id: '0000_smiling_zuras', sql: init0000 },
+  { id: '0001_candidate_matching', sql: candidateMatching0001 }
 ]

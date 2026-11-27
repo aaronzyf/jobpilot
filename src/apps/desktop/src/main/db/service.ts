@@ -129,6 +129,14 @@ export function registerDbIpc(): void {
     return service.setActiveCandidate(h, query, payload.id)
   })
 
+  registerInvoke('db:set-candidate-enabled', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (!payload || typeof payload.id !== 'string' || typeof payload.enabled !== 'boolean')
+      return service.readAfterWrite(h, query)
+    return service.setCandidateEnabled(h, query, payload.id, payload.enabled)
+  })
+
   registerInvoke('db:reset', (_e, payload) =>
     service.resetData(requireHandle(), queryOf(payload))
   )

@@ -47,9 +47,18 @@ export interface CandidateView {
   languages: string[]
   thresholds: { auto: number; reject: number }
   dailyCap: number
+  /** 禁用后不再参与后台匹配；历史分数保留，只是不再更新 */
+  enabled: boolean
   /** 从投递与面试现算，不落库 */
   stats: CandidateStats
   resumeFacts: { projects: number; experiences: number; skills: number }
+}
+
+/** 后台匹配每轮对每个启用档案的扫描摘要，按候选人 id 索引 */
+export interface MatchRunView {
+  at: number
+  scanned: number
+  added: number
 }
 
 export interface JobMatchView {
@@ -254,6 +263,8 @@ export interface SidebarSnapshot {
   activeCandidateId: string
   unreadTotal: number
   pendingInterviews: number
+  /** 后台匹配最近一轮结果；禁用档案保留旧记录，便于回看 */
+  matchRuns: Record<string, MatchRunView>
   revision: number
 }
 
@@ -289,6 +300,8 @@ export interface AppSnapshot {
   metrics: MetricsView
   /** 上次选中的求职者，存 settings 表 */
   activeCandidateId: string
+  /** 后台匹配运行摘要 */
+  matchRuns: Record<string, MatchRunView>
   /** 数据版本号，写操作后自增，渲染层据此判断是否需要重取 */
   revision: number
 }

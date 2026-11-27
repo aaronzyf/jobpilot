@@ -8,6 +8,7 @@ import {
   markAllConversationsRead,
   markConversationRead,
   setBookmark,
+  setCandidateEnabled as updateCandidateEnabled,
   setSetting,
   updateApplicationStatus,
   updateInterviewStatus
@@ -85,6 +86,16 @@ export function setActiveCandidate(
   setSetting(handle, 'active_candidate_id', id)
   bumpRevision(handle)
   return readAfterWrite(handle, { ...query, candidateId: id })
+}
+
+/** 启用 / 禁用档案：禁用只停后台调度，历史分数保留 */
+export function setCandidateEnabled(
+  handle: DatabaseHandle,
+  query: ViewQuery,
+  id: string,
+  enabled: boolean
+): LoadResult {
+  return after(handle, query, () => updateCandidateEnabled(handle, id, enabled))
 }
 
 /** 清空业务表并重新灌种子 */

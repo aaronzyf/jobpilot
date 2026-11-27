@@ -37,6 +37,7 @@ const EMPTY_SIDEBAR: SidebarSnapshot = {
   activeCandidateId: '',
   unreadTotal: 0,
   pendingInterviews: 0,
+  matchRuns: {},
   revision: 0
 }
 
@@ -81,6 +82,9 @@ interface AppState {
   candidateId: string
   candidate: CandidateView
   setCandidateId: (id: string) => void
+  /** 后台匹配每轮摘要，按档案 id 索引 */
+  matchRuns: SidebarSnapshot['matchRuns']
+  setCandidateEnabled: (id: string, enabled: boolean) => void
 
   readIds: string[]
   markRead: (ids: string[]) => void
@@ -207,6 +211,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [apply]
   )
 
+  const setCandidateEnabled = useCallback(
+    (id: string, enabled: boolean) => {
+      void apply((q) => dbService.setCandidateEnabled(q, id, enabled))
+    },
+    [apply]
+  )
+
   const markRead = useCallback(
     (ids: string[]) => {
       // 串行发：并发写同一批消息时，后返回的快照可能覆盖前一次的已读结果
@@ -318,6 +329,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       candidateId: effectiveCandidateId,
       candidate,
       setCandidateId,
+      matchRuns: snapshotSidebar.matchRuns,
+      setCandidateEnabled,
       readIds,
       markRead,
       markAllRead,
@@ -349,6 +362,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     effectiveCandidateId,
     candidate,
     setCandidateId,
+    setCandidateEnabled,
     readIds,
     markRead,
     markAllRead,

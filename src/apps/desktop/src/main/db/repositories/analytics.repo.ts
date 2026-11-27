@@ -54,6 +54,7 @@ export function clearBusinessTables(handle: DatabaseHandle): void {
     'applications',
     'job_bookmarks',
     'job_scores',
+    'match_runs',
     'jobs',
     'sources',
     'saved_views',

@@ -1,5 +1,5 @@
 import type { ApplicationStatus, InterviewStatus } from '../domain/types'
-import type { AppSnapshot, LoadResult, ViewQuery } from '../domain/view'
+import type { AppSnapshot, LoadResult, MatchRunView, ViewQuery } from '../domain/view'
 
 /**
  * 跨进程的唯一契约。
@@ -55,6 +55,10 @@ export interface InvokeContract {
     req: { query: ViewQuery; id: string }
     res: LoadResult
   }
+  'db:set-candidate-enabled': {
+    req: { query: ViewQuery; id: string; enabled: boolean }
+    res: LoadResult
+  }
   'db:reset': {
     req: ViewQuery
     res: LoadResult
@@ -87,6 +91,8 @@ export interface SendContract {
 export interface EventContract {
   'sql-log:entry': { entry: SqlLogEntry; count: number }
   'sql-log:cleared': void
+  /** 后台匹配跑完一轮：附每个档案的最新扫描摘要 */
+  'match:run': { at: number; runs: Record<string, MatchRunView> }
 }
 
 export type InvokeChannel = keyof InvokeContract

@@ -47,5 +47,8 @@ export const dbService = {
   setActiveCandidate: (query: ViewQuery, id: string): Promise<LoadResult> =>
     ipc.call('db:set-active-candidate', { query, id }),
 
+  setCandidateEnabled: (query: ViewQuery, id: string, enabled: boolean): Promise<LoadResult> =>
+    ipc.call('db:set-candidate-enabled', { query, id, enabled }),
+
   reset: (query: ViewQuery): Promise<LoadResult> => ipc.call('db:reset', query)
 }
