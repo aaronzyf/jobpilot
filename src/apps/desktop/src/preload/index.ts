@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { AppSnapshot, ApplicationStatus, InterviewStatus } from '@core'
 
 /**
@@ -27,8 +27,37 @@ const api = {
     setActiveCandidate: (id: string): Promise<AppSnapshot> =>
       ipcRenderer.invoke('db:set-active-candidate', id),
     reset: (): Promise<AppSnapshot> => ipcRenderer.invoke('db:reset')
+  },
+  /** SQL 日志窗口：采集一直在主进程跑，这里只负责开窗口和取缓冲 */
+  sqlLog: {
+    open: () => ipcRenderer.send('sql-log:open'),
+    list: (): Promise<SqlLogEntry[]> => ipcRenderer.invoke('sql-log:list'),
+    status: (): Promise<{ enabled: boolean; count: number }> =>
+      ipcRenderer.invoke('sql-log:status'),
+    clear: (): Promise<SqlLogEntry[]> => ipcRenderer.invoke('sql-log:clear'),
+    setEnabled: (enabled: boolean): Promise<boolean> =>
+      ipcRenderer.invoke('sql-log:set-enabled', enabled),
+    onEntry: (cb: (payload: SqlLogEntryEvent) => void) => {
+      const listener = (_e: IpcRendererEvent, payload: SqlLogEntryEvent) => cb(payload)
+      ipcRenderer.on('sql-log:entry', listener)
+      return () => ipcRenderer.removeListener('sql-log:entry', listener)
+    },
+    onCleared: (cb: () => void) => {
+      const listener = () => cb()
+      ipcRenderer.on('sql-log:cleared', listener)
+      return () => ipcRenderer.removeListener('sql-log:cleared', listener)
+    }
   }
 }
+
+/** SQL 日志窗口专用。参数在主进程已转成字符串，可安全跨 IPC */
+type SqlLogEntry = {
+  seq: number
+  at: number
+  sql: string
+  params: string[]
+}
+type SqlLogEntryEvent = { entry: SqlLogEntry; count: number }
 
 export type JobpilotApi = typeof api
 

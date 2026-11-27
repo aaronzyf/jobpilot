@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, Languages, RefreshCw, Search } from 'lucide-react'
+import { Bell, Database, Languages, RefreshCw, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/misc'
 import { MenuItem, Popover } from '@/components/ui/overlay'
@@ -87,6 +87,16 @@ export function Topbar() {
           <RefreshCw size={12.5} strokeWidth={1.8} className={cn(syncing && 'animate-spin')} />
           {syncing ? t('topbar.syncing') : t('topbar.sync')}
         </Button>
+
+        <button
+          onClick={() => window.jobpilot.sqlLog.open()}
+          title={t('topbar.sqlLog')}
+          aria-label={t('topbar.sqlLog')}
+          data-sql-log
+          className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-3 hover:text-fg"
+        >
+          <Database size={14} strokeWidth={1.7} />
+        </button>
 
         <span className="mx-0.5 h-4 w-px bg-line" />
         <ThemeSwitch />

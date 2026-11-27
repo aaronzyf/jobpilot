@@ -21,11 +21,32 @@ export interface DbApi {
   reset(): Promise<AppSnapshot>
 }
 
+/** SQL 日志条目。参数在主进程已转成字符串，可安全跨 IPC */
+export interface SqlLogEntry {
+  seq: number
+  at: number
+  sql: string
+  params: string[]
+}
+
+export interface SqlLogApi {
+  /** 打开（或聚焦）日志窗口 */
+  open(): void
+  list(): Promise<SqlLogEntry[]>
+  status(): Promise<{ enabled: boolean; count: number }>
+  clear(): Promise<SqlLogEntry[]>
+  setEnabled(enabled: boolean): Promise<boolean>
+  /** 返回取消订阅函数，组件卸载时必须调用 */
+  onEntry(cb: (payload: { entry: SqlLogEntry; count: number }) => void): () => void
+  onCleared(cb: () => void): () => void
+}
+
 export interface JobpilotApi {
   platform: string
   getAppInfo(): Promise<AppInfo>
   setThemeMode(mode: 'system' | 'light' | 'dark'): void
   db: DbApi
+  sqlLog: SqlLogApi
 }
 
 declare global {

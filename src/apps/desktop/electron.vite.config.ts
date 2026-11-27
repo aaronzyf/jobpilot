@@ -16,6 +16,15 @@ export default defineConfig({
     resolve: { alias: { '@core': coreSrc } }
   },
   renderer: {
+    // 第二个入口给 SQL 日志窗口用，与主界面共用 preload 和样式令牌
+    build: {
+      rollupOptions: {
+        input: {
+          main: resolve(process.cwd(), 'src/renderer/index.html'),
+          sqllog: resolve(process.cwd(), 'src/renderer/sqllog.html')
+        }
+      }
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

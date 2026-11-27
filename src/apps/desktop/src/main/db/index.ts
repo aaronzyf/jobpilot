@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { migrations } from './migrations'
+import { recordQuery } from './sqlLog'
 import * as schema from './schema'
 
 /**
@@ -51,7 +52,14 @@ export function openDatabase(file: string): DatabaseHandle {
   sqlite.pragma('foreign_keys = ON')
   applyMigrations(sqlite)
 
-  return { sqlite, db: drizzle(sqlite, { schema }) }
+  return {
+    sqlite,
+    db: drizzle(sqlite, {
+      schema,
+      // 只经 Drizzle 的查询会被记录；迁移走原生 exec，不进日志
+      logger: { logQuery: (query, params) => recordQuery(query, params) }
+    })
+  }
 }
 
 export { schema }

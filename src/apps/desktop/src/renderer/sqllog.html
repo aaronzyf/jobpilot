@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQL 日志</title>
+    <style>
+      html {
+        background: #08080a;
+      }
+      html[data-theme='light'] {
+        background: #f5f5f7;
+      }
+    </style>
+    <script>
+      // 与主窗口同一套主题判定，读同一份 localStorage
+      ;(() => {
+        try {
+          const saved = localStorage.getItem('jobpilot.theme')
+          const mode = saved === 'light' || saved === 'dark' ? saved : 'system'
+          const dark =
+            mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          const theme = dark ? 'dark' : 'light'
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+          // 系统主题变化时跟随（与主窗口 ThemeProvider 的 system 分支一致）
+          if (mode === 'system') {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+              const next = e.matches ? 'dark' : 'light'
+              document.documentElement.dataset.theme = next
+              document.documentElement.style.colorScheme = next
+            })
+          }
+        } catch (err) {
+          /* localStorage 不可用时按深色走 */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/sqllog.tsx"></script>
+  </body>
+</html>

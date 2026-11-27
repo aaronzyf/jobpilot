@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, nativeTheme, shell, type IpcMainEvent } from 'electron'
 import { join } from 'node:path'
 import { closeDatabase, initDatabase, registerDbIpc } from './db/service'
+import { clearEntries, isEnabled, listEntries, setEnabled, subscribe } from './db/sqlLog'
 
 const isMac = process.platform === 'darwin'
 
@@ -79,6 +80,68 @@ function createWindow(): void {
     void win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
+
+let sqlLogWin: BrowserWindow | null = null
+
+/** SQL 日志窗口单例：已开着就聚焦，避免开一堆重复窗口 */
+function createSqlLogWindow(): void {
+  if (sqlLogWin && !sqlLogWin.isDestroyed()) {
+    sqlLogWin.focus()
+    return
+  }
+  const tone = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+  const win = new BrowserWindow({
+    width: 960,
+    height: 640,
+    minWidth: 640,
+    minHeight: 420,
+    title: 'SQL 日志',
+    show: false,
+    backgroundColor: CHROME[tone].bg,
+    titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
+    ...(isMac
+      ? { trafficLightPosition: { x: 16, y: 15 } }
+      : {
+          titleBarOverlay: {
+            color: CHROME[tone].bg,
+            symbolColor: CHROME[tone].symbol,
+            height: 44
+          }
+        }),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false
+    }
+  })
+  sqlLogWin = win
+  const unsubscribe = subscribe(win.webContents)
+  win.once('closed', () => {
+    unsubscribe()
+    sqlLogWin = null
+  })
+  win.on('ready-to-show', () => win.show())
+
+  if (process.env.ELECTRON_RENDERER_URL) {
+    const base = process.env.ELECTRON_RENDERER_URL.replace(/\/$/, '')
+    void win.loadURL(`${base}/sqllog.html`)
+  } else {
+    void win.loadFile(join(__dirname, '../renderer/sqllog.html'))
+  }
+}
+
+ipcMain.on('sql-log:open', () => createSqlLogWindow())
+ipcMain.handle('sql-log:list', () => listEntries())
+ipcMain.handle('sql-log:status', () => ({ enabled: isEnabled(), count: listEntries().length }))
+ipcMain.handle('sql-log:clear', () => {
+  clearEntries()
+  return listEntries()
+})
+ipcMain.handle('sql-log:set-enabled', (_e, value: unknown) => {
+  if (typeof value === 'boolean') setEnabled(value)
+  return isEnabled()
+})
 
 ipcMain.handle('app:info', () => ({
   version: app.getVersion(),

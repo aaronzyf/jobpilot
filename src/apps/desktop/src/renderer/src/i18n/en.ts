@@ -67,6 +67,7 @@ export const en: Dict = {
     pendingCount: '{n} to review',
     toastSyncStart: 'Syncing 5 sources — existing jobs will be skipped',
     toastSyncDone: 'Sync complete: 12 new jobs, 34 duplicates skipped',
+    sqlLog: 'Open SQL log window',
     language: 'Language'
   },
 

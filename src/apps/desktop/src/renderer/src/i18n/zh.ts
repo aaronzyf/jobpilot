@@ -65,6 +65,7 @@ export const zh = {
     pendingCount: '待确认 {n} 条',
     toastSyncStart: '开始同步 5 个渠道，已存在的岗位会跳过',
     toastSyncDone: '同步完成：新增 12 个岗位，去重跳过 34 个',
+    sqlLog: '打开 SQL 日志窗口',
     language: '界面语言'
   },
 
