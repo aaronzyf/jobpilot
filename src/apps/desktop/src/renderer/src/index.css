@@ -1,0 +1,316 @@
+@import 'tailwindcss';
+
+/* 主题令牌。默认（无 data-theme 或 dark）为深色；
+   data-theme 由 lib/theme.tsx 写在 <html> 上，首屏由 index.html 的内联脚本先写一次，避免闪白。 */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #08080a;
+  --surface: #0f0f12;
+  --surface-2: #15151a;
+  --surface-3: #1c1c22;
+  --surface-4: #23232b;
+
+  --border: #202027;
+  --border-strong: #303038;
+
+  --fg: #eeeef1;
+  --fg-muted: #9a9aa4;
+  --fg-subtle: #66666f;
+
+  --accent: #6f8cff;
+  --accent-strong: #8aa0ff;
+  --accent-soft: rgba(111, 140, 255, 0.13);
+  --success: #45c98a;
+  --warning: #e2a33f;
+  --danger: #e56462;
+
+  /* 图表与原生控件的中性色，单独抽出来，浅色下要整体调亮一档 */
+  --track: #1c1c22;
+  --muted-bar: #4a4a55;
+  --soft-bar: #31313b;
+  --soft-bar-hover: #3d3d49;
+
+  --scroll-thumb: #35353f;
+  --scroll-thumb-hover: #4a4a56;
+
+  --range-track: #35353f;
+  --range-thumb: #e9e9ee;
+  --range-thumb-border: #15151a;
+  --range-thumb-ring: #4a4a56;
+
+  --scrim: rgba(0, 0, 0, 0.55);
+  --scrim-soft: rgba(0, 0, 0, 0.4);
+
+  /* 聊天气泡（对方）：深色下要比页面底亮一档，浅色下要比页面底白一档 */
+  --bubble: #15151a;
+
+  --selection-bg: rgba(111, 140, 255, 0.28);
+  --selection-fg: #ffffff;
+
+  /* 深色界面靠一道内高光把浮层从背景里提起来 */
+  --inset-highlight: rgba(255, 255, 255, 0.04);
+  --popover-shadow: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #f7f7fa;
+  --surface-3: #ededf2;
+  --surface-4: #e2e2ea;
+
+  --border: #e4e4ec;
+  --border-strong: #cccdd8;
+
+  --fg: #17171d;
+  --fg-muted: #5b5b69;
+  --fg-subtle: #85858f;
+
+  --accent: #4a63e8;
+  --accent-strong: #3a52d4;
+  --accent-soft: rgba(74, 99, 232, 0.1);
+  --success: #0e9463;
+  --warning: #a9680a;
+  --danger: #cb3a37;
+
+  --track: #eaeaef;
+  --muted-bar: #b7b7c3;
+  --soft-bar: #dcdce4;
+  --soft-bar-hover: #cdcdd9;
+
+  --scroll-thumb: #c9c9d3;
+  --scroll-thumb-hover: #b0b0be;
+
+  --range-track: #dcdce4;
+  --range-thumb: #ffffff;
+  --range-thumb-border: #ffffff;
+  --range-thumb-ring: #c2c2ce;
+
+  --scrim: rgba(22, 22, 30, 0.28);
+  --scrim-soft: rgba(22, 22, 30, 0.16);
+
+  --bubble: #ffffff;
+
+  --selection-bg: rgba(74, 99, 232, 0.18);
+  --selection-fg: #17171d;
+
+  --inset-highlight: rgba(255, 255, 255, 0);
+  --popover-shadow: rgba(24, 24, 33, 0.14);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --color-track: var(--track);
+  --color-muted-bar: var(--muted-bar);
+  --color-soft-bar: var(--soft-bar);
+  --color-soft-bar-hover: var(--soft-bar-hover);
+  --color-scrim: var(--scrim);
+  --color-scrim-soft: var(--scrim-soft);
+  --color-bubble: var(--bubble);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter',
+    'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  font-feature-settings: 'tnum' 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable] {
+  user-select: text;
+}
+
+button {
+  cursor: default;
+}
+
+/* 滚动条常驻占位由各滚动容器自行声明（scrollbar-gutter），
+   避免统配到 * 后给横向滚动容器也留出竖向空槽 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 桌面窗口拖动区域 */
+.drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* macOS 红绿灯占位，避免和侧边栏品牌区重叠 */
+[data-platform='darwin'] .mac-inset {
+  padding-left: 78px;
+}
+
+/* Windows 自绘标题栏的窗口按钮在右上角，右侧留出空间 */
+[data-platform='win32'] .win-inset {
+  padding-right: 148px;
+}
+
+/* ---------------------------------------------------------------- 动效 */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-fade {
+  animation: fade-in 140ms ease-out both;
+}
+.anim-slide {
+  animation: slide-in-right 180ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.anim-pop {
+  animation: pop-in 160ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.anim-rise {
+  animation: rise 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* 页面切换时的轻微上浮，避免硬切 */
+.page-enter > * {
+  animation: rise 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* ---------------------------------------------------------------- 原生控件外观 */
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--range-track);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.12);
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--range-thumb);
+  border: 3px solid var(--range-thumb-border);
+  box-shadow: 0 0 0 1px var(--range-thumb-ring);
+  cursor: grab;
+  transition: transform 120ms ease, background 120ms ease;
+}
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: var(--accent-strong);
+}
+input[type='range']:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  background: var(--accent);
+}
+
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+/* 表格里的数字统一等宽，便于纵向扫读 */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
