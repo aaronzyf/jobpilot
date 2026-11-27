@@ -95,11 +95,14 @@ export function ResumePreviewDialog({
   open: boolean
   onClose: () => void
 }) {
-  const { loadResume, candidate } = useApp()
+  const { loadResume, candidates } = useApp()
   const { t } = useI18n()
   const [resume, setResume] = useState<ResumeView | null>(null)
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
+
+  /** 被查看的档案：不一定是当前选中的求职者 */
+  const owner = candidates.find((c) => c.id === candidateId) ?? null
 
   useEffect(() => {
     if (!open) {
@@ -136,7 +139,7 @@ export function ResumePreviewDialog({
       open={open}
       onClose={onClose}
       width="lg"
-      title={t('resume.previewTitle', { name: candidate.name })}
+      title={t('resume.previewTitle', { name: owner?.name ?? '' })}
       desc={t('resume.previewDesc')}
     >
       {loading ? (
@@ -163,10 +166,10 @@ export function ResumePreviewDialog({
                   {resume.contact.phone}
                 </span>
               ) : null}
-              {candidate.email ? (
+              {owner?.email ? (
                 <span className="flex items-center gap-1 text-[10.5px] text-fg-subtle">
                   <Mail size={10} />
-                  {candidate.email}
+                  {owner.email}
                 </span>
               ) : null}
               {resume.contact.telegram ? (
@@ -177,7 +180,7 @@ export function ResumePreviewDialog({
               ) : null}
               <span className="flex items-center gap-1 text-[10.5px] text-fg-subtle">
                 <User size={10} />
-                {candidate.location} · {t('candidates.fieldYearsValue', { n: candidate.years })}
+                {owner?.location} · {t('candidates.fieldYearsValue', { n: owner?.years ?? 0 })}
               </span>
               <span className="flex items-center gap-1 text-[10.5px] text-fg-subtle">
                 <FileText size={10} />
