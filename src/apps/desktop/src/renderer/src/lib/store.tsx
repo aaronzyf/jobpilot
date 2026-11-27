@@ -63,6 +63,10 @@ interface AppState {
   focusJobId: string | null
   clearFocusJob: () => void
   focusConvId: string | null
+  /** 从侧栏小按钮进入档案配置时，携带目标档案 id */
+  focusCandidateId: string | null
+  clearFocusCandidate: () => void
+  openCandidateConfig: (id: string) => void
 
   // ---------------------------------------------------------------- 数据
   jobs: JobView[]
@@ -132,6 +136,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [reloadKey, setReloadKey] = useState(0)
   const [focusJobId, setFocusJobId] = useState<string | null>(null)
   const [focusConvId, setFocusConvId] = useState<string | null>(null)
+  const [focusCandidateId, setFocusCandidateId] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [matchRuns, setMatchRuns] = useState<Record<string, MatchRunView>>({})
@@ -200,6 +205,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const clearFocusJob = useCallback(() => setFocusJobId(null), [])
+  const clearFocusCandidate = useCallback(() => setFocusCandidateId(null), [])
+  const openCandidateConfig = useCallback(
+    (id: string) => {
+      go('candidates')
+      setFocusCandidateId(id)
+    },
+    [go]
+  )
 
   const setViewFilter = useCallback((patch: Partial<ViewQuery>) => {
     setQuery((prev) => {
@@ -321,6 +334,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       focusJobId,
       clearFocusJob,
       focusConvId,
+      focusCandidateId,
+      clearFocusCandidate,
+      openCandidateConfig,
       jobs: snapshotView.jobs,
       candidates: snapshotSidebar.candidates,
       applications: snapshotView.applications,
@@ -365,6 +381,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     focusJobId,
     clearFocusJob,
     focusConvId,
+    focusCandidateId,
+    clearFocusCandidate,
+    openCandidateConfig,
     snapshotView,
     snapshotSidebar,
     effectiveCandidateId,

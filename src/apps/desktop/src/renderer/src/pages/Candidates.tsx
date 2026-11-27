@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Check,
   FileText,
@@ -169,9 +169,26 @@ function EditorDialog({
 }
 
 export function Candidates() {
-  const { candidate, setCandidateId, setCandidateEnabled, matchRuns, toast, candidates } = useApp()
+  const {
+    candidate,
+    setCandidateId,
+    setCandidateEnabled,
+    matchRuns,
+    toast,
+    candidates,
+    focusCandidateId,
+    clearFocusCandidate
+  } = useApp()
   const { t, lang } = useI18n()
   const [editing, setEditing] = useState<Candidate | null>(null)
+
+  // 侧栏小按钮带来的目标档案：进入页面后直接打开它的配置弹窗
+  useEffect(() => {
+    if (!focusCandidateId) return
+    const target = candidates.find((c) => c.id === focusCandidateId)
+    if (target) setEditing(target)
+    clearFocusCandidate()
+  }, [focusCandidateId, candidates, clearFocusCandidate])
 
   return (
     <div className="h-full overflow-y-auto [scrollbar-gutter:stable]">

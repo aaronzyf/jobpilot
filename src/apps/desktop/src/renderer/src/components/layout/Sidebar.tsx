@@ -1,4 +1,4 @@
-import { Check, Plus, Users2 } from 'lucide-react'
+import { Check, Plus, Settings2, Users2 } from 'lucide-react'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { navItems } from '@/lib/nav'
 import { useApp } from '@/lib/store'
@@ -12,6 +12,7 @@ export function Sidebar() {
     go,
     candidateId,
     setCandidateId,
+    openCandidateConfig,
     matchRuns,
     unreadTotal,
     pendingInterviews,
@@ -141,46 +142,58 @@ export function Sidebar() {
             const isCurrent = c.id === candidateId
             const run = matchRuns[c.id]
             return (
-              <button
+              <div
                 key={c.id}
-                onClick={() => setCandidateId(c.id)}
-                disabled={!c.enabled}
-                title={c.enabled ? c.headline : t('sidebar.disabledHint')}
                 className={cn(
-                  'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left transition-colors',
+                  'group flex w-full items-center rounded-md px-1.5 py-1.5 transition-colors',
                   isCurrent
                     ? 'bg-surface-3 shadow-[inset_0_0_0_1px_var(--inset-highlight)]'
                     : 'hover:bg-surface-2',
-                  !c.enabled && 'cursor-not-allowed opacity-50'
+                  !c.enabled && 'opacity-50'
                 )}
               >
-                <PersonAvatar name={c.name} hue={c.hue} size={20} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={cn(
-                        'truncate text-[11.5px]',
-                        isCurrent ? 'text-fg' : 'text-fg-muted'
-                      )}
-                    >
-                      {c.name}
-                    </span>
-                    {isCurrent ? <Check size={11} className="shrink-0 text-accent" /> : null}
-                    {!c.enabled ? (
-                      <span className="shrink-0 text-[9px] text-fg-subtle">
-                        {t('sidebar.disabled')}
+                <button
+                  onClick={() => setCandidateId(c.id)}
+                  disabled={!c.enabled}
+                  title={c.enabled ? c.headline : t('sidebar.disabledHint')}
+                  className="flex min-w-0 flex-1 items-center gap-1.5 text-left disabled:cursor-not-allowed"
+                >
+                  <PersonAvatar name={c.name} hue={c.hue} size={20} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <span
+                        className={cn(
+                          'truncate text-[11.5px]',
+                          isCurrent ? 'text-fg' : 'text-fg-muted'
+                        )}
+                      >
+                        {c.name}
                       </span>
-                    ) : null}
+                      {isCurrent ? <Check size={11} className="shrink-0 text-accent" /> : null}
+                      {!c.enabled ? (
+                        <span className="shrink-0 text-[9px] text-fg-subtle">
+                          {t('sidebar.disabled')}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="truncate text-[10px] text-fg-subtle">
+                      {!c.enabled
+                        ? t('sidebar.matchPaused')
+                        : run
+                          ? t('sidebar.lastMatch', { n: run.scanned })
+                          : t('sidebar.notMatched')}
+                    </div>
                   </div>
-                  <div className="truncate text-[10px] text-fg-subtle">
-                    {!c.enabled
-                      ? t('sidebar.matchPaused')
-                      : run
-                        ? t('sidebar.lastMatch', { n: run.scanned })
-                        : t('sidebar.notMatched')}
-                  </div>
-                </div>
-              </button>
+                </button>
+                <button
+                  onClick={() => openCandidateConfig(c.id)}
+                  title={t('sidebar.configureCandidate', { name: c.name })}
+                  aria-label={t('sidebar.configureCandidate', { name: c.name })}
+                  className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-subtle opacity-60 hover:bg-surface-3 hover:text-fg group-hover:opacity-100"
+                >
+                  <Settings2 size={12} strokeWidth={1.7} />
+                </button>
+              </div>
             )
           })}
         </div>
