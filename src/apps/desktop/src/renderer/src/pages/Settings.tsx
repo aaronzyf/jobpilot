@@ -3,13 +3,14 @@ import {
   Check,
   Cpu,
   Database,
-  Eye,
-  EyeOff,
+  Info,
+  Plus,
+  RefreshCw,
+  Trash2,
   KeyRound,
   Mail,
   Palette,
   Plug,
-  RefreshCw,
   Send,
   ShieldCheck,
   TriangleAlert
@@ -20,14 +21,16 @@ import { Card } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
 import { ThemeChoices } from '@/components/layout/ThemeSwitch'
+import { APP_VERSION } from '@/generated/version'
 import { useI18n, type TKey } from '@/i18n'
 import { authMeta, relativeLabel, sourceStateMeta } from '@/lib/meta'
 import { useApp } from '@/lib/store'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/services/ipc'
+import type { AppInfo, LlmCustomConfig, LlmMode, LlmSettings } from '@core'
 
-type Section = 'model' | 'sources' | 'delivery' | 'mail' | 'appearance' | 'data'
+type Section = 'model' | 'sources' | 'delivery' | 'mail' | 'appearance' | 'data' | 'about'
 
 const nav: { key: Section; labelKey: TKey; icon: typeof Cpu }[] = [
   { key: 'model', labelKey: 'settings.navModel', icon: Cpu },
@@ -35,7 +38,8 @@ const nav: { key: Section; labelKey: TKey; icon: typeof Cpu }[] = [
   { key: 'delivery', labelKey: 'settings.navDelivery', icon: Send },
   { key: 'mail', labelKey: 'settings.navMail', icon: Mail },
   { key: 'appearance', labelKey: 'settings.navAppearance', icon: Palette },
-  { key: 'data', labelKey: 'settings.navData', icon: Database }
+  { key: 'data', labelKey: 'settings.navData', icon: Database },
+  { key: 'about', labelKey: 'settings.navAbout', icon: Info }
 ]
 
 function Row({
@@ -83,35 +87,68 @@ function Block({
   )
 }
 
-const providers: {
-  id: string
-  name?: string
-  nameKey?: TKey
-  noteKey: TKey
-  models: string
-}[] = [
-  { id: 'deepseek', name: 'DeepSeek', noteKey: 'settings.providerDeepseekNote', models: 'deepseek-chat / reasoner' },
-  { id: 'anthropic', name: 'Anthropic', noteKey: 'settings.providerAnthropicNote', models: 'claude-sonnet-4.6' },
-  { id: 'openai', name: 'OpenAI', noteKey: 'settings.providerOpenaiNote', models: 'gpt-5.2 / o4-mini' },
-  { id: 'ollama', nameKey: 'settings.providerNameOllama', noteKey: 'settings.providerOllamaNote', models: 'qwen3:14b' }
-]
-
 export function Settings() {
   const { toast, candidates, sources, llmUsage, jobs, applications, resetData } = useApp()
   const { theme } = useTheme()
   const { t, lang } = useI18n()
   const [section, setSection] = useState<Section>('model')
-  const [provider, setProvider] = useState('deepseek')
-  const [showKey, setShowKey] = useState(false)
+  const [llmSettings, setLlmSettings] = useState<LlmSettings>({
+    mode: 'built-in',
+    activeCustomId: null,
+    customConfigs: []
+  })
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [configName, setConfigName] = useState('')
+  const [baseUrl, setBaseUrl] = useState('')
+  const [apiKey, setApiKey] = useState('')
   const [autoSend, setAutoSend] = useState(false)
   const [auto, setAuto] = useState(85)
   const [reject, setReject] = useState(40)
   // 库里文件的实际位置由主进程给出，不在前端拼路径
   const [dbPath, setDbPath] = useState('')
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
 
   useEffect(() => {
-    void ipc.call('app:info').then((info) => setDbPath(`${info.dataDir}/jobpilot.db`))
+    void ipc.call('app:info').then((info) => {
+      setAppInfo(info)
+      setDbPath(`${info.dataDir}/jobpilot.db`)
+    })
   }, [])
+
+  const changeLlmMode = (mode: LlmMode) => {
+    setLlmSettings((current) => ({ ...current, mode }))
+  }
+
+  const startNewConfig = () => {
+    setEditingId(null)
+    setConfigName('')
+    setBaseUrl('')
+    setApiKey('')
+  }
+
+  const editConfig = (config: LlmCustomConfig) => {
+    setEditingId(config.id)
+    setConfigName(config.name)
+    setBaseUrl(config.baseUrl)
+    setApiKey('')
+  }
+
+  const saveConfig = async () => {
+    const name = configName.trim()
+    const url = baseUrl.trim()
+    const existing = llmSettings.customConfigs.find((config) => config.id === editingId)
+    if (!name || !url || (!existing?.hasKey && !apiKey.trim())) {
+      toast(t('settings.llmRequired'), 'warning')
+      return
+    }
+    const id = editingId ?? globalThis.crypto.randomUUID()
+    const config = { id, name, baseUrl: url, hasKey: existing?.hasKey ?? Boolean(apiKey.trim()) }
+    const configs = [...llmSettings.customConfigs.filter((item) => item.id !== id), config]
+    setLlmSettings((current) => ({ ...current, mode: 'custom', activeCustomId: id, customConfigs: configs }))
+    setEditingId(id)
+    setApiKey('')
+    toast(t('settings.llmSaved'), 'default')
+  }
 
   return (
     <div className="flex h-full min-h-0">
@@ -146,64 +183,109 @@ export function Settings() {
         <div className="mx-auto w-full max-w-[760px] px-5 py-4">
           {section === 'model' ? (
             <div className="space-y-2.5">
-              <Block title={t('settings.providerTitle')} desc={t('settings.providerDesc')}>
-                <div className="grid grid-cols-4 gap-2 px-4 pb-3.5">
-                  {providers.map((p) => {
-                    const active = provider === p.id
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => setProvider(p.id)}
-                        className={cn(
-                          'relative rounded-md border px-2.5 py-2 text-left transition-colors',
-                          active
-                            ? 'border-accent/50 bg-accent/[0.07]'
-                            : 'border-line bg-surface-2 hover:border-line-strong'
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[12px] text-fg">
-                            {p.nameKey ? t(p.nameKey) : p.name}
-                          </span>
-                          {active ? <Check size={11} className="text-accent" /> : null}
-                        </div>
-                        <div className="mt-1 text-[9.5px] leading-tight text-fg-subtle">
-                          {t(p.noteKey)}
-                        </div>
-                        <div className="mt-1 truncate font-mono text-[9px] text-fg-subtle">
-                          {p.models}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="border-t border-line px-4 py-3">
-                  <Field label="API Key" hint={t('settings.apiKeyHint')}>
-                    <div className="flex gap-1.5">
-                      <div className="relative flex-1">
-                        <Input
-                          type={showKey ? 'text' : 'password'}
-                          defaultValue="sk-1f8c9d2e4b7a6c3d5e8f0a2b4c6d8e0f"
-                          className="pr-8 font-mono text-[11px]"
-                        />
-                        <button
-                          onClick={() => setShowKey((v) => !v)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg"
-                        >
-                          {showKey ? <EyeOff size={12} /> : <Eye size={12} />}
-                        </button>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => toast(t('settings.toastConnect'), 'success')}
-                      >
-                        <RefreshCw size={11} />
-                        {t('settings.testConnection')}
+              <Block title={t('settings.llmTitle')} desc={t('settings.llmDesc')}>
+                <div className="space-y-2 border-t border-line px-4 py-3" role="group" aria-label={t('settings.llmTitle')}>
+                  <button
+                    aria-pressed={llmSettings.mode === 'built-in'}
+                    onClick={() => changeLlmMode('built-in')}
+                    className={cn(
+                      'flex w-full items-center justify-between rounded-md border px-3 py-2.5 text-left transition-colors',
+                      llmSettings.mode === 'built-in'
+                        ? 'border-accent/50 bg-accent/[0.06]'
+                        : 'border-line bg-surface-2 hover:border-line-strong'
+                    )}
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-[12px] text-fg">{t('settings.llmBuiltIn')}</span>
+                      {llmSettings.mode === 'built-in' ? (
+                        <span className="mt-1 block text-[10.5px] leading-relaxed text-fg-subtle">{t('settings.llmBuiltInNote')}</span>
+                      ) : null}
+                    </span>
+                    {llmSettings.mode === 'built-in' ? <Check size={13} className="ml-3 shrink-0 text-accent" /> : null}
+                  </button>
+
+                  <div className={cn(
+                    'rounded-md border transition-colors',
+                    llmSettings.mode === 'custom' ? 'border-accent/50 bg-accent/[0.03]' : 'border-line bg-surface-2'
+                  )}>
+                    <button
+                      aria-pressed={llmSettings.mode === 'custom'}
+                      onClick={() => changeLlmMode('custom')}
+                      className="flex min-h-10 w-full items-center justify-between px-3 py-2 text-left"
+                    >
+                      <span className="text-[12px] text-fg">{t('settings.llmCustom')}</span>
+                      {llmSettings.mode === 'custom' ? <Check size={13} className="text-accent" /> : null}
+                    </button>
+                    {llmSettings.mode === 'custom' ? (
+                      <div className="border-t border-line px-3 py-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="text-[11px] text-fg-muted">{t('settings.llmConfigs')}</div>
+                      <Button variant="outline" size="sm" onClick={startNewConfig} className="gap-1.5">
+                        <Plus size={12} />{t('settings.llmAdd')}
                       </Button>
                     </div>
-                  </Field>
+                    {llmSettings.customConfigs.length ? (
+                      <div className="mb-3 divide-y divide-line rounded-md border border-line">
+                        {llmSettings.customConfigs.map((config) => (
+                          <div key={config.id} className="flex items-center gap-2 px-3 py-2">
+                            <button className="min-w-0 flex-1 text-left" onClick={() => editConfig(config)}>
+                              <span className="block truncate text-[11.5px] text-fg">{config.name}</span>
+                              <span className="block truncate font-mono text-[9.5px] text-fg-subtle">{config.baseUrl}</span>
+                            </button>
+                            {llmSettings.activeCustomId === config.id ? (
+                              <Badge tone="accent">{t('settings.llmActive')}</Badge>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                onClick={() => setLlmSettings((current) => ({ ...current, activeCustomId: config.id }))}
+                              >{t('settings.llmUse')}</Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t('settings.llmDelete')}
+                              title={t('settings.llmDelete')}
+                              onClick={() => {
+                                const configs = llmSettings.customConfigs.filter((item) => item.id !== config.id)
+                                const activeId = llmSettings.activeCustomId === config.id ? configs[0]?.id ?? null : llmSettings.activeCustomId
+                                setLlmSettings((current) => ({ ...current, activeCustomId: activeId, customConfigs: configs }))
+                                if (editingId === config.id) startNewConfig()
+                              }}
+                            ><Trash2 size={12} /></Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mb-3 rounded-md border border-dashed border-line px-3 py-3 text-center text-[10.5px] text-fg-subtle">
+                        {t('settings.llmEmpty')}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <Field label={t('settings.llmConfigName')}>
+                        <Input value={configName} onChange={(e) => setConfigName(e.target.value)} placeholder={t('settings.llmNamePlaceholder')} />
+                      </Field>
+                      <Field label={t('settings.llmBaseUrl')}>
+                        <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.example.com/v1" />
+                      </Field>
+                      <Field label={t('settings.llmKey')} hint={llmSettings.customConfigs.find((item) => item.id === editingId)?.hasKey ? t('settings.llmKeySaved') : t('settings.apiKeyHint')}>
+                        <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={t('settings.llmKeyPlaceholder')} autoComplete="new-password" />
+                      </Field>
+                      <div className="flex items-end justify-end gap-1.5">
+                        {editingId ? <Button variant="ghost" size="sm" onClick={startNewConfig}>{t('common.cancel')}</Button> : null}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toast(t('settings.llmTestPending'), 'default')}
+                        >
+                          {t('settings.llmTest')}
+                        </Button>
+                        <Button size="sm" onClick={() => void saveConfig()}>{t('common.save')}</Button>
+                      </div>
+                      </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </Block>
 
@@ -214,16 +296,17 @@ export function Settings() {
                     ['settings.sceneMatch', 'deepseek-chat', 'settings.sceneMatchNote'],
                     ['settings.sceneLetter', 'claude-sonnet-4.6', 'settings.sceneLetterNote'],
                     ['settings.sceneField', 'deepseek-chat', 'settings.sceneFieldNote']
-                  ] as const
-                ).map(([label, model, note]) => (
+                  ] as const).map(([label, model, note]) => (
                     <div key={label} className="flex items-center gap-3 px-4 py-2">
                       <div className="min-w-0 flex-1">
                         <div className="text-[11.5px] text-fg">{t(label)}</div>
                         <div className="text-[10px] text-fg-subtle">{t(note)}</div>
                       </div>
                       <Select defaultValue={model} className="h-7 w-[168px] text-[11px]">
-                        <option value={model}>{model}</option>
+                        <option value="deepseek-chat">deepseek-chat</option>
                         <option value="deepseek-reasoner">deepseek-reasoner</option>
+                        <option value="claude-sonnet-4.6">claude-sonnet-4.6</option>
+                        <option value="gpt-5.2">gpt-5.2</option>
                         <option value="qwen3:14b">{t('settings.localModel', { v: 'qwen3:14b' })}</option>
                       </Select>
                     </div>
@@ -623,6 +706,61 @@ export function Settings() {
                   <li>· {t('settings.privacy3')}</li>
                 </ul>
               </Card>
+            </div>
+          ) : null}
+
+          {section === 'about' ? (
+            <div className="space-y-2.5">
+              <Card className="overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-b from-accent-strong to-accent text-lg font-semibold text-white shadow-sm">
+                    j
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14px] font-medium text-fg">jobpilot</div>
+                    <div className="mt-0.5 text-[10.5px] text-fg-subtle">{t('settings.aboutDescription')}</div>
+                  </div>
+                  <Badge tone="accent">v{appInfo?.version ?? APP_VERSION}</Badge>
+                </div>
+                <div className="border-t border-line px-4 py-3 text-[10.5px] leading-relaxed text-fg-subtle">
+                  {t('settings.aboutLocalFirst')}
+                </div>
+              </Card>
+
+              <Block title={t('settings.aboutAppInfo')}>
+                <Row label={t('settings.aboutVersion')}>
+                  <span className="font-mono text-[11px] text-fg-muted">{appInfo?.version ?? APP_VERSION}</span>
+                </Row>
+                <Row label={t('settings.aboutPlatform')}>
+                  <span className="text-[11px] text-fg-muted">
+                    {appInfo?.platform === 'darwin'
+                      ? 'macOS'
+                      : appInfo?.platform === 'win32'
+                        ? 'Windows'
+                        : appInfo?.platform === 'linux'
+                          ? 'Linux'
+                          : '—'}
+                  </span>
+                </Row>
+                <Row label={t('settings.aboutElectron')}>
+                  <span className="font-mono text-[11px] text-fg-muted">{appInfo?.electron ?? '—'}</span>
+                </Row>
+              </Block>
+
+              <Block title={t('settings.aboutUpdates')} desc={t('settings.aboutUpdatesDesc')}>
+                <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-3">
+                  <span className="text-[10.5px] text-fg-subtle">{t('settings.aboutUpdatesPending')}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => toast(t('settings.aboutUpdatesPending'), 'default')}
+                  >
+                    <RefreshCw size={11} />
+                    {t('settings.checkUpdates')}
+                  </Button>
+                </div>
+              </Block>
             </div>
           ) : null}
         </div>
