@@ -19,6 +19,14 @@ import type { AppSnapshot, LoadResult, MatchRunView, ResumeView, ViewQuery } fro
 
 /** 请求-响应通道 */
 export interface InvokeContract {
+  'settings:get-llm': {
+    req: void
+    res: LlmSettings
+  }
+  'settings:set-llm': {
+    req: LlmSettingsPatch
+    res: LlmSettings
+  }
   'app:info': {
     req: void
     res: AppInfo
@@ -134,6 +142,32 @@ export type AppInfo = {
 }
 
 export type ThemeMode = 'system' | 'light' | 'dark'
+
+export type LlmMode = 'built-in' | 'custom'
+
+export type LlmCustomConfig = {
+  id: string
+  name: string
+  baseUrl: string
+  hasKey: boolean
+}
+
+export type LlmSettings = {
+  mode: LlmMode
+  activeCustomId: string | null
+  customConfigs: LlmCustomConfig[]
+}
+
+export type LlmSettingsPatch = {
+  mode: LlmMode
+  activeCustomId: string | null
+  customConfigs: Array<{
+    id: string
+    name: string
+    baseUrl: string
+    apiKey?: string
+  }>
+}
 
 /** SQL 日志条目。参数在主进程已转成字符串，可安全跨 IPC */
 export type SqlLogEntry = {

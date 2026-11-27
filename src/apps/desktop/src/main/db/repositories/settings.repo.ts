@@ -2,6 +2,8 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { DatabaseHandle } from '../index'
 import { schema } from '../index'
 
+export const LLM_SETTINGS_KEY = 'llm_settings'
+
 /**
  * settings 仓储：键值配置与两个常驻计数。
  *

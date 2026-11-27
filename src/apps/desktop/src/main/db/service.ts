@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, safeStorage } from 'electron'
 import { join } from 'node:path'
 import type {
   ApplicationStatus,
@@ -7,10 +7,12 @@ import type {
   ViewKey,
   ViewQuery
 } from '@core'
+import type { LlmMode, LlmSettings, LlmSettingsPatch } from '@core'
 import { registerInvoke } from '../ipc'
 import { requestMatching } from '../matching/engine'
 import { openDatabase, type DatabaseHandle } from './index'
 import { seedIfEmpty } from './seed'
+import { getSetting, LLM_SETTINGS_KEY, setSetting } from './repositories'
 import * as service from './services'
 
 let handle: DatabaseHandle | null = null
@@ -18,6 +20,84 @@ let handle: DatabaseHandle | null = null
 function requireHandle(): DatabaseHandle {
   if (!handle) throw new Error('数据库尚未初始化')
   return handle
+}
+
+const DEFAULT_LLM_SETTINGS: LlmSettings = {
+  mode: 'built-in',
+  activeCustomId: null,
+  customConfigs: []
+}
+
+type StoredLlmConfig = {
+  id: string
+  name: string
+  baseUrl: string
+  apiKeyEnc?: string
+}
+
+type StoredLlmSettings = {
+  mode: LlmMode
+  activeCustomId: string | null
+  customConfigs: StoredLlmConfig[]
+}
+
+function readLlmSettings(h: DatabaseHandle): LlmSettings {
+  const stored = getSetting<StoredLlmSettings>(h, LLM_SETTINGS_KEY)
+  if (!stored || !Array.isArray(stored.customConfigs)) return DEFAULT_LLM_SETTINGS
+  return {
+    mode: stored.mode === 'custom' ? 'custom' : 'built-in',
+    activeCustomId: typeof stored.activeCustomId === 'string' ? stored.activeCustomId : null,
+    customConfigs: stored.customConfigs
+      .filter((c) => c && typeof c.id === 'string' && typeof c.name === 'string' && typeof c.baseUrl === 'string')
+      .map((c) => ({ id: c.id, name: c.name, baseUrl: c.baseUrl, hasKey: Boolean(c.apiKeyEnc) }))
+  }
+}
+
+function encryptApiKey(value: string): string | undefined {
+  if (!value.trim()) return undefined
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('系统安全存储不可用')
+  return safeStorage.encryptString(value).toString('base64')
+}
+
+function normalizeLlmSettings(patch: LlmSettingsPatch): StoredLlmSettings {
+  const customConfigs = patch.customConfigs
+    .filter((c) => c && c.id.trim() && c.name.trim() && c.baseUrl.trim())
+    .map((c) => ({
+      id: c.id.trim(),
+      name: c.name.trim(),
+      baseUrl: c.baseUrl.trim().replace(/\/$/, ''),
+      ...(c.apiKey?.trim() ? { apiKeyEnc: encryptApiKey(c.apiKey) } : {})
+    }))
+  return {
+    mode: patch.mode === 'custom' ? 'custom' : 'built-in',
+    activeCustomId: customConfigs.some((c) => c.id === patch.activeCustomId) ? patch.activeCustomId : null,
+    customConfigs
+  }
+}
+
+export function getLlmSettings(): LlmSettings {
+  return readLlmSettings(requireHandle())
+}
+
+export function setLlmSettings(patch: LlmSettingsPatch): LlmSettings {
+  const h = requireHandle()
+  const previous = getSetting<StoredLlmSettings>(h, LLM_SETTINGS_KEY)
+  const next = normalizeLlmSettings({
+    ...patch,
+    customConfigs: patch.customConfigs.map((config) => {
+      if (config.apiKey?.trim() || !previous) return config
+      const old = previous.customConfigs?.find((item) => item.id === config.id)
+      return old?.apiKeyEnc ? { ...config, apiKey: '' } : config
+    })
+  })
+  next.customConfigs = next.customConfigs.map((config) => {
+    const incoming = patch.customConfigs.find((item) => item.id === config.id)
+    const old = previous?.customConfigs?.find((item) => item.id === config.id)
+    if (!incoming?.apiKey?.trim() && old?.apiKeyEnc) return { ...config, apiKeyEnc: old.apiKeyEnc }
+    return config
+  })
+  setSetting(h, LLM_SETTINGS_KEY, next)
+  return readLlmSettings(h)
 }
 
 export function initDatabase(): DatabaseHandle {
@@ -129,6 +209,14 @@ function endpointOf(value: unknown): { host: string; port: number } | null {
  * 参数不合法时回读当前视图，界面照常刷新，不返回 null。
  */
 export function registerDbIpc(): void {
+  registerInvoke('settings:get-llm', () => getLlmSettings())
+
+  registerInvoke('settings:set-llm', (_e, payload) => {
+    if (!payload || (payload.mode !== 'built-in' && payload.mode !== 'custom')) return getLlmSettings()
+    if (!Array.isArray(payload.customConfigs)) return getLlmSettings()
+    return setLlmSettings(payload)
+  })
+
   registerInvoke('db:snapshot', () => service.readSnapshot(requireHandle()))
 
   registerInvoke('db:load', (_e, payload) =>
