@@ -206,13 +206,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearFocusJob = useCallback(() => setFocusJobId(null), [])
   const clearFocusCandidate = useCallback(() => setFocusCandidateId(null), [])
-  const openCandidateConfig = useCallback(
-    (id: string) => {
-      go('candidates')
-      setFocusCandidateId(id)
-    },
-    [go]
-  )
+  // 侧栏齿轮只弹配置框，不切换页面；弹窗由 Shell 统一渲染
+  const openCandidateConfig = useCallback((id: string) => setFocusCandidateId(id), [])
 
   const setViewFilter = useCallback((patch: Partial<ViewQuery>) => {
     setQuery((prev) => {

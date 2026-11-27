@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { CandidateEditorDialog } from '@/components/candidates/CandidateEditorDialog'
 import { CommandPalette } from '@/components/layout/CommandPalette'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Toasts } from '@/components/layout/Toasts'
@@ -14,6 +15,21 @@ import { Interviews } from '@/pages/Interviews'
 import { Jobs } from '@/pages/Jobs'
 import { Messages } from '@/pages/Messages'
 import { Settings } from '@/pages/Settings'
+
+/** 侧栏齿轮按钮触发的配置弹窗，与当前页面无关 */
+function CandidateConfigDialog() {
+  const { focusCandidateId, clearFocusCandidate, candidates } = useApp()
+  const candidate = candidates.find((c) => c.id === focusCandidateId)
+  if (!candidate) return null
+  return (
+    <CandidateEditorDialog
+      key={candidate.id}
+      candidate={candidate}
+      open
+      onClose={clearFocusCandidate}
+    />
+  )
+}
 
 function Shell() {
   const { page, go, paletteOpen, setPaletteOpen } = useApp()
@@ -59,6 +75,7 @@ function Shell() {
       </div>
       <CommandPalette />
       <Toasts />
+      <CandidateConfigDialog />
     </div>
   )
 }
