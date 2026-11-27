@@ -1,6 +1,5 @@
-import { Check, ChevronsUpDown, Plus, Users2 } from 'lucide-react'
+import { Check, Plus, Users2 } from 'lucide-react'
 import { PersonAvatar } from '@/components/ui/avatar'
-import { MenuLabel, MenuSeparator, Popover } from '@/components/ui/overlay'
 import { navItems } from '@/lib/nav'
 import { useApp } from '@/lib/store'
 import { useT } from '@/i18n'
@@ -11,12 +10,11 @@ export function Sidebar() {
   const {
     page,
     go,
-    candidate,
     candidateId,
     setCandidateId,
+    matchRuns,
     unreadTotal,
     pendingInterviews,
-    toast,
     candidates,
     sources
   } = useApp()
@@ -127,7 +125,7 @@ export function Sidebar() {
         <div className="mb-1 flex items-center justify-between px-1">
           <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-fg-subtle">
             <Users2 size={10} />
-            {t('sidebar.currentCandidate')}
+            {t('sidebar.profiles')}
           </span>
           <button
             onClick={() => go('candidates')}
@@ -138,60 +136,64 @@ export function Sidebar() {
           </button>
         </div>
 
-        <Popover
-          align="start"
-          side="top"
-          className="w-[188px]"
-          trigger={({ toggle }) => (
-            <button
-              onClick={toggle}
-              className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-surface-2"
-            >
-              <PersonAvatar name={candidate.name} hue={candidate.hue} size={24} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[12px] text-fg">{candidate.name}</div>
-                <div className="truncate text-[10.5px] text-fg-subtle">
-                  {t('sidebar.appliedPending', {
-                    applied: candidate.stats.applied,
-                    pending: candidate.stats.pending
-                  })}
+        <div className="space-y-px">
+          {candidates.map((c) => {
+            const isCurrent = c.id === candidateId
+            const run = matchRuns[c.id]
+            return (
+              <button
+                key={c.id}
+                onClick={() => setCandidateId(c.id)}
+                disabled={!c.enabled}
+                title={c.enabled ? c.headline : t('sidebar.disabledHint')}
+                className={cn(
+                  'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left transition-colors',
+                  isCurrent
+                    ? 'bg-surface-3 shadow-[inset_0_0_0_1px_var(--inset-highlight)]'
+                    : 'hover:bg-surface-2',
+                  !c.enabled && 'cursor-not-allowed opacity-50'
+                )}
+              >
+                <PersonAvatar name={c.name} hue={c.hue} size={20} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={cn(
+                        'truncate text-[11.5px]',
+                        isCurrent ? 'text-fg' : 'text-fg-muted'
+                      )}
+                    >
+                      {c.name}
+                    </span>
+                    {isCurrent ? <Check size={11} className="shrink-0 text-accent" /> : null}
+                    {!c.enabled ? (
+                      <span className="shrink-0 text-[9px] text-fg-subtle">
+                        {t('sidebar.disabled')}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="truncate text-[10px] text-fg-subtle">
+                    {!c.enabled
+                      ? t('sidebar.matchPaused')
+                      : run
+                        ? t('sidebar.lastMatch', { n: run.scanned })
+                        : t('sidebar.notMatched')}
+                  </div>
                 </div>
-              </div>
-              <ChevronsUpDown size={12} className="shrink-0 text-fg-subtle" />
-            </button>
-          )}
-        >
-          <MenuLabel>{t('sidebar.switchCandidate')}</MenuLabel>
-          {candidates.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                setCandidateId(c.id)
-                toast(t('sidebar.toastSwitched', { name: c.name }), 'success')
-              }}
-              className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-surface-3"
-            >
-              <PersonAvatar name={c.name} hue={c.hue} size={20} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[11.5px] text-fg">{c.name}</div>
-                <div className="truncate text-[10px] text-fg-subtle">{c.headline}</div>
-              </div>
-              {c.id === candidateId ? <Check size={12} className="shrink-0 text-accent" /> : null}
-            </button>
-          ))}
-          <MenuSeparator />
-          <button
-            onClick={() => go('candidates')}
-            className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-[11.5px] text-fg-muted hover:bg-surface-3 hover:text-fg"
-          >
-            <Plus size={12} />
-            {t('sidebar.newProfile')}
-          </button>
-        </Popover>
+              </button>
+            )
+          })}
+        </div>
 
         <div className="mt-1 flex items-center gap-1 px-1.5 text-[10px] text-fg-subtle">
-          <span className="h-1 w-1 rounded-full bg-success" />
-          {running > 0 ? t('sidebar.syncingChannel') : t('sidebar.lastSync')}
+          <span
+            className={cn(
+              'h-1 w-1 rounded-full',
+              candidates.some((c) => c.enabled) ? 'animate-pulse bg-success' : 'bg-fg-subtle'
+            )}
+          />
+          {t('sidebar.matchStatus', { n: candidates.filter((c) => c.enabled).length })}
+          {running > 0 ? ` · ${t('sidebar.syncingChannel')}` : ''}
         </div>
       </div>
     </aside>

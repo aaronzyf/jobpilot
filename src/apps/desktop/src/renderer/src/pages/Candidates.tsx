@@ -5,6 +5,7 @@ import {
   Mail,
   MoreHorizontal,
   Pencil,
+  Power,
   Plus,
   Sparkles,
   Upload,
@@ -168,7 +169,7 @@ function EditorDialog({
 }
 
 export function Candidates() {
-  const { candidate, setCandidateId, toast, candidates } = useApp()
+  const { candidate, setCandidateId, setCandidateEnabled, matchRuns, toast, candidates } = useApp()
   const { t, lang } = useI18n()
   const [editing, setEditing] = useState<Candidate | null>(null)
 
@@ -199,6 +200,16 @@ export function Candidates() {
       <div className="grid grid-cols-2 gap-2.5 min-[1180px]:grid-cols-3">
         {candidates.map((c) => {
           const isCurrent = c.id === candidate.id
+          const run = matchRuns[c.id]
+          const toggleEnabled = () => {
+            setCandidateEnabled(c.id, !c.enabled)
+            toast(
+              t(c.enabled ? 'candidates.toastDisabled' : 'candidates.toastEnabled', {
+                name: c.name
+              }),
+              c.enabled ? 'warning' : 'success'
+            )
+          }
           return (
             <Card
               key={c.id}
@@ -215,6 +226,9 @@ export function Candidates() {
                     {isCurrent ? (
                       <Badge tone="accent">{t('candidates.current')}</Badge>
                     ) : null}
+                    <Badge tone={c.enabled ? 'success' : 'neutral'} dot>
+                      {c.enabled ? t('candidates.matching') : t('candidates.disabled')}
+                    </Badge>
                   </div>
                   <div className="mt-0.5 truncate text-[10.5px] text-fg-subtle">
                     {t('candidates.yearsOld', { headline: c.headline, n: c.years })}
@@ -232,6 +246,9 @@ export function Candidates() {
                   )}
                 >
                   <MenuItem onClick={() => setEditing(c)}>{t('candidates.editProfile')}</MenuItem>
+                  <MenuItem onClick={toggleEnabled}>
+                    {c.enabled ? t('candidates.disable') : t('candidates.enable')}
+                  </MenuItem>
                   <MenuItem onClick={() => toast(t('candidates.toastDuplicated'), 'success')}>
                     {t('candidates.duplicate')}
                   </MenuItem>
@@ -256,6 +273,17 @@ export function Candidates() {
                     {t('candidates.thresholdOrder')}
                   </div>
                 </div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between text-[9.5px] text-fg-subtle">
+                <span>
+                  {c.enabled
+                    ? t('candidates.matchScan', { n: run?.scanned ?? 0 })
+                    : t('candidates.matchPaused')}
+                </span>
+                <span>
+                  {run ? relativeLabel(lang, new Date(run.at).toISOString()) : t('candidates.notScanned')}
+                </span>
               </div>
 
               <div className="mt-2.5 space-y-1.5">
@@ -317,6 +345,16 @@ export function Candidates() {
                 <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setEditing(c)}>
                   <Pencil size={11} />
                   {t('common.edit')}
+                </Button>
+                <Button
+                  variant={c.enabled ? 'ghost' : 'outline'}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={toggleEnabled}
+                  title={c.enabled ? t('candidates.disableHint') : t('candidates.enableHint')}
+                >
+                  <Power size={11} />
+                  {c.enabled ? t('candidates.disable') : t('candidates.enable')}
                 </Button>
               </div>
             </Card>

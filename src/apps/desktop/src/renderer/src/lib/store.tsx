@@ -15,6 +15,7 @@ import type {
   JobView,
   CandidateView,
   LoadResult,
+  MatchRunView,
   SidebarSnapshot,
   ViewQuery,
   ViewSnapshot
@@ -22,6 +23,7 @@ import type {
 import { useI18n } from '@/i18n'
 import type { NavKey } from '@/lib/nav'
 import { dbService } from '@/services/db'
+import { subscribeMatchRuns } from '@/services/matching'
 
 type ToastTone = 'default' | 'success' | 'warning' | 'danger'
 
@@ -132,9 +134,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [focusConvId, setFocusConvId] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [matchRuns, setMatchRuns] = useState<Record<string, MatchRunView>>({})
   const seq = useRef(0)
   const queryRef = useRef(query)
   queryRef.current = query
+
+  /** 后台匹配不受页面读影响：主进程推一轮就更新一轮摘要 */
+  useEffect(() => subscribeMatchRuns((runs) => setMatchRuns((prev) => ({ ...prev, ...runs }))), [])
 
   // ------------------------------------------------------------ 按页读
   useEffect(() => {
@@ -146,6 +152,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!alive) return
         setSidebar(result.sidebar)
         setView(result.view)
+        setMatchRuns(result.sidebar.matchRuns)
         setQuery((prev) =>
           prev.candidateId ? prev : { ...prev, candidateId: result.sidebar.activeCandidateId }
         )
@@ -329,7 +336,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       candidateId: effectiveCandidateId,
       candidate,
       setCandidateId,
-      matchRuns: snapshotSidebar.matchRuns,
+      matchRuns,
       setCandidateEnabled,
       readIds,
       markRead,
@@ -352,6 +359,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sidebar,
     view,
     error,
+    matchRuns,
     page,
     go,
     focusJobId,
