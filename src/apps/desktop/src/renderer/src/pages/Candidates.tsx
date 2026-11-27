@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   Check,
   FileText,
+  Inbox,
   Mail,
   MoreHorizontal,
   Pencil,
@@ -174,6 +175,17 @@ export function Candidates() {
                   ) : (
                     <Badge tone="danger">{t('candidates.cannotSend')}</Badge>
                   )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Inbox size={11} className="shrink-0 text-fg-subtle" />
+                  <span className="min-w-0 flex-1 truncate text-[10.5px] text-fg-muted">
+                    {c.pop3 ? `${c.pop3.host}:${c.pop3.port}` : t('candidates.pop3NotConfigured')}
+                  </span>
+                  {c.pop3 ? (
+                    <Badge tone={c.pop3.enabled ? 'success' : 'neutral'}>
+                      {c.pop3.enabled ? t('candidates.pop3Enabled') : t('candidates.pop3Paused')}
+                    </Badge>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Sparkles size={11} className="shrink-0 text-fg-subtle" />

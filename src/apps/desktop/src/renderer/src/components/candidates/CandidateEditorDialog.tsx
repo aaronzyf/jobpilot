@@ -1,17 +1,21 @@
 import { useState } from 'react'
 import {
   FileText,
+  Inbox,
   Mail,
+  Send,
   SlidersHorizontal,
   Sparkles,
   Upload,
   UserRound,
   type LucideIcon
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import type { CandidateProfilePatch } from '@core'
+import { Badge, type Tone } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/form'
 import { Dialog } from '@/components/ui/overlay'
+import { Switch } from '@/components/ui/switch'
 import { useI18n, type TKey } from '@/i18n'
 import { relativeLabel } from '@/lib/meta'
 import { useApp } from '@/lib/store'
@@ -78,7 +82,7 @@ export function CandidateEditorDialog({
   open: boolean
   onClose: () => void
 }) {
-  const { toast } = useApp()
+  const { toast, saveCandidateProfile } = useApp()
   const { t, lang } = useI18n()
   const [section, setSection] = useState<SectionKey>('profile')
 
@@ -92,8 +96,68 @@ export function CandidateEditorDialog({
   const [dailyCap, setDailyCap] = useState(candidate.dailyCap)
   const [auto, setAuto] = useState(candidate.thresholds.auto)
   const [reject, setReject] = useState(candidate.thresholds.reject)
+  const [smtpHost, setSmtpHost] = useState(candidate.smtp?.host ?? '')
+  const [smtpPort, setSmtpPort] = useState(String(candidate.smtp?.port ?? 465))
+  const [pop3Host, setPop3Host] = useState(candidate.pop3?.host ?? '')
+  const [pop3Port, setPop3Port] = useState(String(candidate.pop3?.port ?? 995))
+  const [pop3Enabled, setPop3Enabled] = useState(candidate.pop3?.enabled ?? false)
 
   const active = SECTIONS.find((s) => s.key === section) ?? SECTIONS[0]
+
+  /** 端口按字符串编辑，保存时再解析；填不出合法端口就当作未配置 */
+  const portOf = (raw: string): number | null => {
+    const n = Number.parseInt(raw.trim(), 10)
+    return Number.isInteger(n) && n >= 1 && n <= 65535 ? n : null
+  }
+
+  const smtpConfigured = Boolean(smtpHost.trim() && portOf(smtpPort))
+  const smtpTone: Tone = !smtpConfigured
+    ? 'danger'
+    : candidate.smtp?.verified
+      ? 'success'
+      : 'warning'
+  const smtpLabel = !smtpConfigured
+    ? t('candidates.cannotSend')
+    : candidate.smtp?.verified
+      ? t('candidates.smtpVerified')
+      : t('candidates.smtpUnverified')
+
+  const pop3Configured = Boolean(pop3Host.trim() && portOf(pop3Port))
+  const pop3Tone: Tone = !pop3Configured ? 'neutral' : pop3Enabled ? 'success' : 'warning'
+  const pop3Label = !pop3Configured
+    ? t('candidates.pop3NotConfigured')
+    : pop3Enabled
+      ? t('candidates.pop3Enabled')
+      : t('candidates.pop3Paused')
+
+  const onSave = () => {
+    if (!name.trim()) {
+      toast(t('candidates.errNameRequired'), 'danger')
+      return
+    }
+    const smtp = smtpHost.trim() && portOf(smtpPort) ? { host: smtpHost.trim(), port: portOf(smtpPort)! } : null
+    const pop3 = pop3Host.trim() && portOf(pop3Port)
+      ? { host: pop3Host.trim(), port: portOf(pop3Port)!, enabled: pop3Enabled }
+      : null
+    const patch: CandidateProfilePatch = {
+      name: name.trim(),
+      headline: headline.trim(),
+      location: location.trim(),
+      languages: languages
+        .split(/[,，]/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+      note,
+      thresholds: { auto, reject },
+      dailyCap,
+      email: email.trim(),
+      smtp,
+      pop3
+    }
+    saveCandidateProfile(candidate.id, patch)
+    toast(t('candidates.toastSaved', { name: patch.name }), 'success')
+    onClose()
+  }
 
   return (
     <Dialog
@@ -110,10 +174,7 @@ export function CandidateEditorDialog({
           <Button
             variant="primary"
             size="sm"
-            onClick={() => {
-              toast(t('candidates.toastSaved', { name }), 'success')
-              onClose()
-            }}
+            onClick={onSave}
           >
             {t('common.save')}
           </Button>
@@ -297,35 +358,75 @@ export function CandidateEditorDialog({
                     ))}
                   </Select>
                 </Field>
-                <Field label={t('candidates.fieldSmtpHost')}>
-                  <Input
-                    value={candidate.smtp?.host ?? t('candidates.smtpNotConfigured')}
-                    readOnly
-                  />
-                </Field>
-                <Field label={t('candidates.fieldSmtpPort')}>
-                  <Input value={candidate.smtp ? String(candidate.smtp.port) : '—'} readOnly />
-                </Field>
               </div>
 
-              <div className="flex items-center justify-between rounded-md border border-line bg-surface-2/50 px-3 py-2">
-                <span className="text-[11px] text-fg-muted">{t('candidates.smtpStatus')}</span>
-                <Badge
-                  tone={
-                    !candidate.smtp
-                      ? 'danger'
-                      : candidate.smtp.verified
-                        ? 'success'
-                        : 'warning'
-                  }
-                  dot
-                >
-                  {!candidate.smtp
-                    ? t('candidates.cannotSend')
-                    : candidate.smtp.verified
-                      ? t('candidates.smtpVerified')
-                      : t('candidates.smtpUnverified')}
-                </Badge>
+              {/* SMTP：发信 */}
+              <div className="rounded-md border border-line bg-surface-2/40 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 text-[11.5px] text-fg">
+                    <Send size={12} className="text-fg-subtle" />
+                    SMTP
+                  </span>
+                  <Badge tone={smtpTone} dot>
+                    {smtpLabel}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <Field label={t('candidates.fieldSmtpHost')}>
+                    <Input
+                      value={smtpHost}
+                      onChange={(e) => setSmtpHost(e.target.value)}
+                      placeholder={t('candidates.smtpHostPlaceholder')}
+                    />
+                  </Field>
+                  <Field label={t('candidates.fieldPort')}>
+                    <Input
+                      value={smtpPort}
+                      onChange={(e) => setSmtpPort(e.target.value)}
+                      inputMode="numeric"
+                      placeholder={t('candidates.portPlaceholder')}
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              {/* POP3：收信 */}
+              <div className="rounded-md border border-line bg-surface-2/40 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 text-[11.5px] text-fg">
+                    <Inbox size={12} className="text-fg-subtle" />
+                    POP3
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={pop3Tone} dot>
+                      {pop3Label}
+                    </Badge>
+                    <span className="flex items-center gap-1.5 text-[10.5px] text-fg-subtle">
+                      <Switch checked={pop3Enabled} onChange={setPop3Enabled} size="sm" />
+                      {t('candidates.pop3Enable')}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <Field label={t('candidates.fieldPop3Host')}>
+                    <Input
+                      value={pop3Host}
+                      onChange={(e) => setPop3Host(e.target.value)}
+                      placeholder={t('candidates.pop3HostPlaceholder')}
+                    />
+                  </Field>
+                  <Field label={t('candidates.fieldPort')}>
+                    <Input
+                      value={pop3Port}
+                      onChange={(e) => setPop3Port(e.target.value)}
+                      inputMode="numeric"
+                      placeholder={t('candidates.portPlaceholder')}
+                    />
+                  </Field>
+                </div>
+                <p className="mt-2 text-[10px] leading-relaxed text-fg-subtle">
+                  {t('candidates.pop3Hint')}
+                </p>
               </div>
             </div>
           ) : null}
