@@ -4,6 +4,7 @@ import type { AppInfo } from '@core'
 import { closeDatabase, initDatabase, registerDbIpc } from './db/service'
 import { clearEntries, isEnabled, listEntries, setEnabled, subscribe } from './db/sqlLog'
 import { registerInvoke, registerSend } from './ipc'
+import { startMatching, stopMatching } from './matching/engine'
 
 const isMac = process.platform === 'darwin'
 
@@ -177,8 +178,9 @@ nativeTheme.on('updated', () => {
 
 void app.whenReady().then(() => {
   // 数据库先就绪：窗口一打开就要渲染数据，晚于 createWindow 会闪一帧空列表
-  initDatabase()
+  const dbHandle = initDatabase()
   registerIpc()
+  startMatching(dbHandle)
 
   createWindow()
 
@@ -192,5 +194,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
+  stopMatching()
   closeDatabase()
 })

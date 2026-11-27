@@ -2,6 +2,7 @@ import { app } from 'electron'
 import { join } from 'node:path'
 import type { ApplicationStatus, InterviewStatus, ViewKey, ViewQuery } from '@core'
 import { registerInvoke } from '../ipc'
+import { requestMatching } from '../matching/engine'
 import { openDatabase, type DatabaseHandle } from './index'
 import { seedIfEmpty } from './seed'
 import * as service from './services'
@@ -134,10 +135,14 @@ export function registerDbIpc(): void {
     const query = queryOf(payload?.query)
     if (!payload || typeof payload.id !== 'string' || typeof payload.enabled !== 'boolean')
       return service.readAfterWrite(h, query)
-    return service.setCandidateEnabled(h, query, payload.id, payload.enabled)
+    const result = service.setCandidateEnabled(h, query, payload.id, payload.enabled)
+    requestMatching()
+    return result
   })
 
-  registerInvoke('db:reset', (_e, payload) =>
-    service.resetData(requireHandle(), queryOf(payload))
-  )
+  registerInvoke('db:reset', (_e, payload) => {
+    const result = service.resetData(requireHandle(), queryOf(payload))
+    requestMatching()
+    return result
+  })
 }
