@@ -12,6 +12,7 @@ import {
   UserRound
 } from 'lucide-react'
 import { CandidateEditorDialog } from '@/components/candidates/CandidateEditorDialog'
+import { ResumeTrigger } from '@/components/candidates/ResumePreviewDialog'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -156,9 +157,7 @@ export function Candidates() {
               <div className="mt-2.5 space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <FileText size={11} className="shrink-0 text-danger/70" />
-                  <span className="min-w-0 flex-1 truncate text-[10.5px] text-fg-muted">
-                    {c.resumeFile}
-                  </span>
+                  <ResumeTrigger candidateId={c.id} fileName={c.resumeFile} />
                   <span className="shrink-0 text-[9.5px] text-fg-subtle">
                     {relativeLabel(lang, c.resumeUpdatedAt)}
                   </span>

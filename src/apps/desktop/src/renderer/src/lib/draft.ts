@@ -2,7 +2,7 @@ import { translate, type Lang, type TKey } from '@/i18n'
 import type { Candidate, Job } from '@/lib/types'
 
 const romanize: Record<string, string> = {
-  Aaron: 'Aaron Zhang',
+  张永富: 'Yongfu Zhang',
   林珊: 'Lin Shan',
   陈默: 'Mo Chen'
 }

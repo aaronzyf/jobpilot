@@ -21,6 +21,7 @@ import { relativeLabel } from '@/lib/meta'
 import { useApp } from '@/lib/store'
 import type { Candidate } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { ResumeTrigger } from './ResumePreviewDialog'
 
 type SectionKey = 'profile' | 'resume' | 'matching' | 'delivery'
 
@@ -257,7 +258,11 @@ export function CandidateEditorDialog({
                 <div className="flex items-center gap-2.5 rounded-md border border-dashed border-line-strong bg-surface-2/50 px-3 py-2.5">
                   <FileText size={18} className="shrink-0 text-danger/70" />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[12px] text-fg">{candidate.resumeFile}</div>
+                    <ResumeTrigger
+                      candidateId={candidate.id}
+                      fileName={candidate.resumeFile}
+                      className="text-[12px] text-fg"
+                    />
                     <div className="text-[10.5px] text-fg-subtle">
                       {t('candidates.resumePages', { n: candidate.resumePages })}
                     </div>

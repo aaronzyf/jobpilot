@@ -60,30 +60,30 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
   const candidateSeeds: CandidateSeed[] = [
     {
       id: 'c1',
-      name: 'Aaron',
-      headline: '前端工程师 · React / Electron',
-      years: 6,
-      location: '深圳',
+      name: '张永富',
+      headline: '全栈工程师 / 前端架构师 · React Native',
+      years: 18,
+      location: '南京',
       hue: 228,
-      email: 'aaron.zyf@gmail.com',
+      email: 'aaron.xuzhou@gmail.com',
       languages: ['中文', 'English'],
-      note: '只考虑远程或深圳；不看外包与驻场；薪资不低于 40K。海外岗位需要签证赞助。',
+      note: '期望南京或远程协作；偏好有真实业务复杂度的团队；愿意带教与做技术选型。',
       thresholdAuto: 85,
       thresholdReject: 40,
       dailyCap: 12,
       enabled: true,
-      resumeFile: 'aaron-frontend-2026.pdf',
+      resumeFile: '张永富-全栈工程师-简历.pdf',
       resumeUpdatedAt: t.daysAgo(3),
-      resumePages: 2,
+      resumePages: 3,
       smtpHost: 'smtp.gmail.com',
       smtpPort: 465,
       smtpVerified: true,
       pop3Host: 'pop.gmail.com',
       pop3Port: 995,
       pop3Enabled: true,
-      factProjects: 7,
-      factExperiences: 3,
-      factSkills: 24
+      factProjects: 9,
+      factExperiences: 6,
+      factSkills: 45
     },
     {
       id: 'c2',
@@ -110,7 +110,7 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       pop3Enabled: false,
       factProjects: 5,
       factExperiences: 2,
-      factSkills: 18
+      factSkills: 13
     },
     {
       id: 'c3',
@@ -136,8 +136,8 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       pop3Port: 995,
       pop3Enabled: false,
       factProjects: 9,
-      factExperiences: 4,
-      factSkills: 31
+      factExperiences: 3,
+      factSkills: 18
     }
   ]
 
@@ -772,7 +772,7 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
     j14: { c1: 86, c2: 44, c3: 62 }
   }
 
-  // 只有 Aaron 有完整的判定理由：这些理由本来就是「以他的简历为基准」写的
+  // 只有 c1 有完整的判定理由：这些理由本来就是「以他的简历为基准」写的
   const reasonMatrix: Record<
     string,
     { reasons: { label: string; weight: number; detail: string }[]; gaps: string[] }
@@ -922,7 +922,7 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       status: 'sent',
       submittedAt: t.atDay(0, 9, 42),
       score: 92,
-      resumeSnapshot: 'aaron-frontend-2026.pdf · 版本 7',
+      resumeSnapshot: '张永富-全栈工程师-简历.pdf · 版本 7',
       toEmail: null,
       subject: null,
       body: null,
@@ -937,11 +937,11 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       status: 'sent',
       submittedAt: t.atDay(0, 9, 15),
       score: 88,
-      resumeSnapshot: 'aaron-frontend-2026.pdf · 版本 7',
+      resumeSnapshot: '张永富-全栈工程师-简历.pdf · 版本 7',
       toEmail: 'fe-hr@bytedance.com',
-      subject: 'Aaron+资深前端开发工程师+6年',
+      subject: '张永富+资深前端开发工程师+18年',
       body:
-        '您好，\n\n我在 BOSS 直聘上看到贵司「资深前端开发工程师 · 飞书」的岗位，希望应聘。\n\n我目前有 6 年前端开发经验，长期负责企业级产品的前端架构，主导过基于 ProseMirror 的富文本编辑器模块，对超长文档的渲染性能做过系统性优化（首屏渲染从 1.8s 降到 640ms）。这些经历与岗位要求的协同编辑器与性能优化方向高度一致。\n\n随信附上简历，期待有机会进一步沟通。\n\n此致\nAaron',
+        '您好，\n\n我在 BOSS 直聘上看到贵司「资深前端开发工程师 · 飞书」的岗位，希望应聘。\n\n我目前有 18 年研发经验，长期负责企业级产品的前端架构，主导过基于 ProseMirror 的富文本编辑器模块，对超长文档的渲染性能做过系统性优化（首屏渲染从 1.8s 降到 640ms）。这些经历与岗位要求的协同编辑器与性能优化方向高度一致。\n\n随信附上简历，期待有机会进一步沟通。\n\n此致\n张永富',
       subjectRuleOk: true,
       error: null
     },
@@ -968,7 +968,7 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       status: 'pending_confirm',
       submittedAt: t.atDay(0, 8, 50),
       score: 74,
-      resumeSnapshot: 'aaron-frontend-2026.pdf · 版本 7',
+      resumeSnapshot: '张永富-全栈工程师-简历.pdf · 版本 7',
       toEmail: null,
       subject: null,
       body: null,
@@ -998,7 +998,7 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
       status: 'queued',
       submittedAt: t.atDay(0, 8, 12),
       score: 81,
-      resumeSnapshot: 'aaron-frontend-2026.pdf · 版本 7',
+      resumeSnapshot: '张永富-全栈工程师-简历.pdf · 版本 7',
       toEmail: null,
       subject: null,
       body: null,
@@ -1110,7 +1110,7 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
     msg('cv2-1', 'cv2', 1, t.daysAgo(2), 'in', '你好，看到你的简历，商业化这边在招前端，想了解一下你目前看机会的节奏？', t.daysAgo(2)),
     msg('cv2-2', 'cv2', 2, t.daysAgo(2), 'out', '你好，我这边在看机会，远程或者深圳都可以，主要看团队和业务方向。', t.daysAgo(2)),
     msg('cv2-3', 'cv2', 3, t.daysAgo(1), 'in', '明白，我们是深圳坐班，做商业化增长方向。方便发一份最近的作品集吗？', t.hoursAgo(20)),
-    msg('cv3-1', 'cv3', 1, t.daysAgo(1), 'in', 'Hi Aaron — thanks for applying to the Console team. Your editor work looks close to what we are building. Are you open to a 30-minute intro call this week?', t.daysAgo(1)),
+    msg('cv3-1', 'cv3', 1, t.daysAgo(1), 'in', 'Hi 张永富 — thanks for applying to the Console team. Your editor work looks close to what we are building. Are you open to a 30-minute intro call this week?', t.daysAgo(1)),
     msg('cv3-2', 'cv3', 2, t.hoursAgo(22), 'out', 'Hi Emily, thanks for reaching out. I am open to it — I am in GMT+8, so mornings your time work best for me.', t.hoursAgo(22)),
     msg('cv3-3', 'cv3', 3, t.minutesAgo(52), 'in', 'Great. I have sent a scheduling link for Thursday 9:00–11:00 PT. Also, are you authorized to work in the US, or would you need sponsorship?', null),
     msg('cv4-1', 'cv4', 1, t.daysAgo(3), 'in', '面试反馈出来了，两位面试官评价都不错。', t.daysAgo(3)),

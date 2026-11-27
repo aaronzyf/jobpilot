@@ -534,6 +534,20 @@ export const zh = {
     toastArchived: '已归档，可在设置中恢复'
   },
 
+  resume: {
+    previewTitle: '简历预览 · {name}',
+    previewDesc: '解析后的简历内容，只在本机保存',
+    openPreview: '查看简历预览',
+    loading: '正在读取简历…',
+    notParsed: '这份简历还没有解析内容',
+    profile: '个人简介',
+    intent: '求职意向',
+    skills: '技术栈',
+    kindExperience: '工作经历',
+    kindProject: '项目',
+    kindEducation: '教育背景'
+  },
+
   messages: {
     hint: '与招聘方的往来记录，按岗位归档',
     searchPlaceholder: '搜索公司、岗位或联系人',

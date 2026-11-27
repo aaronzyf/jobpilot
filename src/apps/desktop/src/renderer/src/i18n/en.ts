@@ -536,6 +536,20 @@ export const en: Dict = {
     toastArchived: 'Archived — restorable from Settings'
   },
 
+  resume: {
+    previewTitle: 'Resume preview · {name}',
+    previewDesc: 'Parsed resume content, stored on this device only',
+    openPreview: 'View resume preview',
+    loading: 'Reading the resume…',
+    notParsed: 'This resume has no parsed content yet',
+    profile: 'Profile',
+    intent: 'Job intent',
+    skills: 'Skills',
+    kindExperience: 'Experience',
+    kindProject: 'Projects',
+    kindEducation: 'Education'
+  },
+
   messages: {
     hint: 'Every exchange with recruiters, filed by job',
     searchPlaceholder: 'Search company or contact',
