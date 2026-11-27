@@ -1,4 +1,5 @@
 import type { WebContents } from 'electron'
+import { emit } from '../ipc'
 
 /**
  * SQL 日志的采集端。
@@ -47,7 +48,7 @@ export function recordQuery(sql: string, params: unknown[]): void {
   if (entries.length > LIMIT) entries.splice(0, entries.length - LIMIT)
 
   for (const wc of subscribers) {
-    if (!wc.isDestroyed()) wc.send('sql-log:entry', { entry, count: entries.length })
+    emit(wc, 'sql-log:entry', { entry, count: entries.length })
   }
 }
 
@@ -58,7 +59,7 @@ export function listEntries(): SqlLogEntry[] {
 export function clearEntries(): void {
   entries = []
   for (const wc of subscribers) {
-    if (!wc.isDestroyed()) wc.send('sql-log:cleared')
+    emit(wc, 'sql-log:cleared')
   }
 }
 

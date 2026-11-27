@@ -8,6 +8,7 @@ import { LANGS, useI18n } from '@/i18n'
 import { pageInfo } from '@/lib/nav'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { ipc } from '@/services/ipc'
 
 export function LanguageSwitch() {
   const { lang, setLang, t } = useI18n()
@@ -104,7 +105,7 @@ export function Topbar() {
         {/* SQL 日志是开发期调试工具，生产构建里连按钮都不输出 */}
         {import.meta.env.DEV && (
           <button
-            onClick={() => window.jobpilot.sqlLog.open()}
+            onClick={() => ipc.emit('sql-log:open')}
             title={t('topbar.sqlLog')}
             aria-label={t('topbar.sqlLog')}
             data-sql-log

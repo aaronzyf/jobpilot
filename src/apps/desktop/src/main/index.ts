@@ -1,7 +1,9 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, shell, type IpcMainEvent } from 'electron'
+import { app, BrowserWindow, nativeTheme, shell } from 'electron'
 import { join } from 'node:path'
+import type { AppInfo } from '@core'
 import { closeDatabase, initDatabase, registerDbIpc } from './db/service'
 import { clearEntries, isEnabled, listEntries, setEnabled, subscribe } from './db/sqlLog'
+import { registerInvoke, registerSend } from './ipc'
 
 const isMac = process.platform === 'darwin'
 
@@ -133,35 +135,40 @@ function createSqlLogWindow(): void {
   }
 }
 
-ipcMain.on('sql-log:open', () => createSqlLogWindow())
-ipcMain.handle('sql-log:list', () => listEntries())
-ipcMain.handle('sql-log:status', () => ({ enabled: isEnabled(), count: listEntries().length }))
-ipcMain.handle('sql-log:clear', () => {
-  clearEntries()
-  return listEntries()
-})
-ipcMain.handle('sql-log:set-enabled', (_e, value: unknown) => {
-  if (typeof value === 'boolean') setEnabled(value)
-  return isEnabled()
-})
+/** 所有 IPC 通道都在这里注册，渲染层只认 main/ipc 暴露的契约 */
+function registerIpc(): void {
+  registerDbIpc()
 
-ipcMain.handle('app:info', () => ({
-  version: app.getVersion(),
-  platform: process.platform,
-  electron: process.versions.electron,
-  dataDir: app.getPath('userData')
-}))
+  registerSend('sql-log:open', () => createSqlLogWindow())
+  registerInvoke('sql-log:list', () => listEntries())
+  registerInvoke('sql-log:status', () => ({ enabled: isEnabled(), count: listEntries().length }))
+  registerInvoke('sql-log:clear', () => {
+    clearEntries()
+    return listEntries()
+  })
+  registerInvoke('sql-log:set-enabled', (_e, value) => {
+    if (typeof value === 'boolean') setEnabled(value)
+    return isEnabled()
+  })
 
-/**
- * 渲染层把「用户选择」而不是「解析结果」送过来：
- * mode=system 时交给 Electron 跟随系统，这样 prefers-color-scheme 才会继续反映 OS 变化。
- */
-ipcMain.on('theme:set-mode', (event: IpcMainEvent, mode: unknown) => {
-  if (!isThemeMode(mode)) return
-  nativeTheme.themeSource = mode
-  const win = BrowserWindow.fromWebContents(event.sender)
-  if (win) paintChrome(win)
-})
+  registerInvoke('app:info', (): AppInfo => ({
+    version: app.getVersion(),
+    platform: process.platform,
+    electron: process.versions.electron,
+    dataDir: app.getPath('userData')
+  }))
+
+  /**
+   * 渲染层把「用户选择」而不是「解析结果」送过来：
+   * mode=system 时交给 Electron 跟随系统，prefers-color-scheme 才会继续反映 OS 变化。
+   */
+  registerSend('theme:set-mode', (event, mode) => {
+    if (!isThemeMode(mode)) return
+    nativeTheme.themeSource = mode
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win) paintChrome(win)
+  })
+}
 
 // 跟随系统时，OS 切换明暗要同步窗口底色
 nativeTheme.on('updated', () => {
@@ -171,7 +178,7 @@ nativeTheme.on('updated', () => {
 void app.whenReady().then(() => {
   // 数据库先就绪：窗口一打开就要渲染数据，晚于 createWindow 会闪一帧空列表
   initDatabase()
-  registerDbIpc()
+  registerIpc()
 
   createWindow()
 

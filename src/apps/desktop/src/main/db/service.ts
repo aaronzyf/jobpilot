@@ -1,6 +1,7 @@
-import { app, ipcMain } from 'electron'
+import { app } from 'electron'
 import { join } from 'node:path'
 import type { ApplicationStatus, InterviewStatus, ViewKey, ViewQuery } from '@core'
+import { registerInvoke } from '../ipc'
 import { openDatabase, type DatabaseHandle } from './index'
 import { seedIfEmpty } from './seed'
 import * as service from './services'
@@ -55,7 +56,7 @@ const APPLICATION_STATUSES: ApplicationStatus[] = [
   'rejected'
 ]
 
-/** IPC 传来的都是 unknown：这里只做形状校验，不碰业务与 SQL */
+/** IPC 传来的都是未知形状：这里只做校验，不碰业务与 SQL */
 function queryOf(value: unknown): ViewQuery {
   if (!value || typeof value !== 'object') return { page: 'dashboard' }
   const q = value as Partial<ViewQuery>
@@ -66,52 +67,69 @@ function queryOf(value: unknown): ViewQuery {
 }
 
 /**
- * IPC 边界层：校验参数 → 调业务用例 → 返回结果。
- * 所有数据规则都在 services/ 里，本文件不写 SQL、不拼读模型、不发第二条 IPC。
+ * 数据通道注册。全部经 main/ipc/registry 的类型化入口，
+ * 本文件不再直接出现 ipcMain，也不写 SQL、不拼读模型。
+ * 参数不合法时回读当前视图，界面照常刷新，不返回 null。
  */
 export function registerDbIpc(): void {
-  ipcMain.handle('db:snapshot', () => service.readSnapshot(requireHandle()))
+  registerInvoke('db:snapshot', () => service.readSnapshot(requireHandle()))
 
-  ipcMain.handle('db:load', (_e, query: unknown) =>
-    service.readAfterWrite(requireHandle(), queryOf(query))
+  registerInvoke('db:load', (_e, payload) =>
+    service.readAfterWrite(requireHandle(), queryOf(payload))
   )
 
-  ipcMain.handle('db:mark-conversation-read', (_e, query: unknown, id: unknown) => {
-    if (typeof id !== 'string') return null
-    return service.markRead(requireHandle(), queryOf(query), id)
+  registerInvoke('db:mark-conversation-read', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (typeof payload?.id !== 'string') return service.readAfterWrite(h, query)
+    return service.markRead(h, query, payload.id)
   })
 
-  ipcMain.handle('db:mark-all-read', (_e, query: unknown) =>
-    service.markAllRead(requireHandle(), queryOf(query))
+  registerInvoke('db:mark-all-read', (_e, payload) =>
+    service.markAllRead(requireHandle(), queryOf(payload))
   )
 
-  ipcMain.handle('db:send-message', (_e, query: unknown, conversationId: unknown, text: unknown) => {
-    if (typeof conversationId !== 'string' || typeof text !== 'string' || !text.trim()) return null
-    return service.sendMessage(requireHandle(), queryOf(query), conversationId, text.trim())
+  registerInvoke('db:send-message', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (!payload || typeof payload.conversationId !== 'string' || typeof payload.text !== 'string')
+      return service.readAfterWrite(h, query)
+    if (!payload.text.trim()) return service.readAfterWrite(h, query)
+    return service.sendMessage(h, query, payload.conversationId, payload.text.trim())
   })
 
-  ipcMain.handle('db:set-interview-status', (_e, query: unknown, id: unknown, status: unknown) => {
-    if (typeof id !== 'string' || !INTERVIEW_STATUSES.includes(status as InterviewStatus)) return null
-    return service.setInterview(requireHandle(), queryOf(query), id, status as InterviewStatus)
+  registerInvoke('db:set-interview-status', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (!payload || typeof payload.id !== 'string' || !INTERVIEW_STATUSES.includes(payload.status))
+      return service.readAfterWrite(h, query)
+    return service.setInterview(h, query, payload.id, payload.status)
   })
 
-  ipcMain.handle('db:set-job-saved', (_e, query: unknown, jobId: unknown, saved: unknown) => {
-    if (typeof jobId !== 'string' || typeof saved !== 'boolean') return null
-    return service.setSaved(requireHandle(), queryOf(query), jobId, saved)
+  registerInvoke('db:set-job-saved', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (!payload || typeof payload.jobId !== 'string' || typeof payload.saved !== 'boolean')
+      return service.readAfterWrite(h, query)
+    return service.setSaved(h, query, payload.jobId, payload.saved)
   })
 
-  ipcMain.handle('db:set-application-status', (_e, query: unknown, id: unknown, status: unknown) => {
-    if (typeof id !== 'string' || typeof status !== 'string') return null
-    if (!APPLICATION_STATUSES.includes(status as ApplicationStatus)) return null
-    return service.setApplication(requireHandle(), queryOf(query), id, status as ApplicationStatus)
+  registerInvoke('db:set-application-status', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (!payload || typeof payload.id !== 'string' || !APPLICATION_STATUSES.includes(payload.status))
+      return service.readAfterWrite(h, query)
+    return service.setApplication(h, query, payload.id, payload.status)
   })
 
-  ipcMain.handle('db:set-active-candidate', (_e, query: unknown, id: unknown) => {
-    if (typeof id !== 'string') return null
-    return service.setActiveCandidate(requireHandle(), queryOf(query), id)
+  registerInvoke('db:set-active-candidate', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (!payload || typeof payload.id !== 'string') return service.readAfterWrite(h, query)
+    return service.setActiveCandidate(h, query, payload.id)
   })
 
-  ipcMain.handle('db:reset', (_e, query: unknown) =>
-    service.resetData(requireHandle(), queryOf(query))
+  registerInvoke('db:reset', (_e, payload) =>
+    service.resetData(requireHandle(), queryOf(payload))
   )
 }

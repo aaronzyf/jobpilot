@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode
 } from 'react'
+import { ipc } from '@/services/ipc'
 
 /** 用户选择：跟随系统 / 强制浅色 / 强制深色 */
 export type ThemeMode = 'system' | 'light' | 'dark'
@@ -64,7 +65,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const next = mode === 'system' ? systemTheme() : mode
     apply(next)
     // 主进程据此调整窗口底色、Windows 标题栏按钮配色，并让原生菜单跟随
-    window.jobpilot?.setThemeMode?.(mode)
+    ipc.emit('theme:set-mode', mode)
     if (mode !== 'system') return
 
     const mql = window.matchMedia(DARK_QUERY)

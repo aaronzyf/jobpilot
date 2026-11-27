@@ -25,6 +25,7 @@ import { authMeta, relativeLabel, sourceStateMeta } from '@/lib/meta'
 import { useApp } from '@/lib/store'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
+import { ipc } from '@/services/ipc'
 
 type Section = 'model' | 'sources' | 'delivery' | 'mail' | 'appearance' | 'data'
 
@@ -109,7 +110,7 @@ export function Settings() {
   const [dbPath, setDbPath] = useState('')
 
   useEffect(() => {
-    void window.jobpilot.getAppInfo().then((info) => setDbPath(`${info.dataDir}/jobpilot.db`))
+    void ipc.call('app:info').then((info) => setDbPath(`${info.dataDir}/jobpilot.db`))
   }, [])
 
   return (

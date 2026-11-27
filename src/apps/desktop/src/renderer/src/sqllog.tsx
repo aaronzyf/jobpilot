@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Check, Pause, Play, Search, Trash2 } from 'lucide-react'
+import type { SqlLogEntry } from '@core'
+import { ipc } from '@/services/ipc'
 import '@/index.css'
 
-type Entry = Awaited<ReturnType<typeof window.jobpilot.sqlLog.list>>[number]
+type Entry = SqlLogEntry
 
 const clock = (at: number): string => {
   const d = new Date(at)
@@ -21,16 +23,16 @@ function SqlLogApp() {
 
   useEffect(() => {
     // 主进程无窗口时也在采集，所以这里能拿到打开窗口之前的查询
-    void Promise.all([window.jobpilot.sqlLog.list(), window.jobpilot.sqlLog.status()]).then(
+    void Promise.all([ipc.call('sql-log:list'), ipc.call('sql-log:status')]).then(
       ([list, status]) => {
         setEntries(list)
         setEnabled(status.enabled)
       }
     )
-    const offEntry = window.jobpilot.sqlLog.onEntry(({ entry }) => {
+    const offEntry = ipc.on('sql-log:entry', ({ entry }) => {
       setEntries((prev) => [...prev.slice(-499), entry])
     })
-    const offCleared = window.jobpilot.sqlLog.onCleared(() => setEntries([]))
+    const offCleared = ipc.on('sql-log:cleared', () => setEntries([]))
     return () => {
       offEntry()
       offCleared()
@@ -52,11 +54,11 @@ function SqlLogApp() {
   }, [entries, query])
 
   const toggleCollect = () => {
-    void window.jobpilot.sqlLog.setEnabled(!enabled).then((next) => setEnabled(next))
+    void ipc.call('sql-log:set-enabled', !enabled).then((next) => setEnabled(next))
   }
 
   const clear = () => {
-    void window.jobpilot.sqlLog.clear().then((list) => setEntries(list))
+    void ipc.call('sql-log:clear').then((list) => setEntries(list))
   }
 
   const copy = (entry: Entry) => {
