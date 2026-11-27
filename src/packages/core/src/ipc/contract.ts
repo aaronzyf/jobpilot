@@ -3,7 +3,7 @@ import type {
   CandidateProfilePatch,
   InterviewStatus
 } from '../domain/types'
-import type { AppSnapshot, LoadResult, MatchRunView, ViewQuery } from '../domain/view'
+import type { AppSnapshot, LoadResult, MatchRunView, ResumeView, ViewQuery } from '../domain/view'
 
 /**
  * 跨进程的唯一契约。
@@ -30,6 +30,11 @@ export interface InvokeContract {
   'db:load': {
     req: ViewQuery
     res: LoadResult
+  }
+  /** 简历预览：点开才读，不进任何页面的默认切片 */
+  'db:load-resume': {
+    req: { candidateId: string }
+    res: ResumeView | null
   }
   'db:mark-conversation-read': {
     req: { query: ViewQuery; id: string }

@@ -4,6 +4,7 @@ import type {
   CandidateProfilePatch,
   InterviewStatus,
   LoadResult,
+  ResumeView,
   ViewQuery
 } from '@core'
 import { ipc } from './ipc'
@@ -20,6 +21,10 @@ export const dbService = {
 
   /** 按页面与筛选条件读取：返回侧栏 + 当前页数据 */
   load: (query: ViewQuery): Promise<LoadResult> => ipc.call('db:load', query),
+
+  /** 简历预览：点开某位求职者的简历时才查一次库 */
+  loadResume: (candidateId: string): Promise<ResumeView | null> =>
+    ipc.call('db:load-resume', { candidateId }),
 
   markConversationRead: (query: ViewQuery, id: string): Promise<LoadResult> =>
     ipc.call('db:mark-conversation-read', { query, id }),

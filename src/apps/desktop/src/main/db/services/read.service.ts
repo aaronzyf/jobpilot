@@ -1,6 +1,7 @@
 import type {
   AppSnapshot,
   LoadResult,
+  ResumeView,
   SidebarSnapshot,
   ViewQuery,
   ViewSnapshot
@@ -18,6 +19,7 @@ import {
   toLlmUsageViews,
   toMatchRunViews,
   toMetrics,
+  toResumeView,
   toSavedViewViews,
   toSourceViews
 } from '../mappers'
@@ -31,6 +33,7 @@ import {
   listBookmarks,
   candidateApplicationRows,
   candidateInterviewRows,
+  getResumeDocument,
   listCandidates,
   listConversations,
   listInterviewers,
@@ -41,6 +44,7 @@ import {
   listMatchRuns,
   listMessages,
   listMessagesSince,
+  listResumeItems,
   listSavedViews,
   listSources,
   listSubmissions,
@@ -195,6 +199,26 @@ export function readView(handle: DatabaseHandle, query: ViewQuery): ViewSnapshot
 /** 写操作之后回传「侧栏 + 当前页」，避免界面读到过期筛选结果 */
 export function readAfterWrite(handle: DatabaseHandle, query: ViewQuery): LoadResult {
   return { sidebar: readSidebar(handle), view: readView(handle, query) }
+}
+
+/**
+ * 读某位求职者的简历预览。
+ *
+ * 与页面读模型不同：预览是「点开才读」的详情，不进任何页面的默认切片，
+ * 否则每个页面都要拖着全量简历正文走。
+ */
+export function readResume(handle: DatabaseHandle, candidateId: string): ResumeView | null {
+  const candidate = listCandidates(handle).find((c) => c.id === candidateId)
+  if (!candidate) return null
+  return toResumeView(
+    getResumeDocument(handle, candidateId),
+    listResumeItems(handle, candidateId),
+    {
+      file: candidate.resumeFile,
+      pages: candidate.resumePages,
+      updatedAt: candidate.resumeUpdatedAt
+    }
+  )
 }
 
 /** 一次读全。只给脚本 / 旧调用方用，界面已切到 readView */

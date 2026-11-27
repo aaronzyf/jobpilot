@@ -17,6 +17,7 @@ import type {
   CandidateView,
   LoadResult,
   MatchRunView,
+  ResumeView,
   SidebarSnapshot,
   ViewQuery,
   ViewSnapshot
@@ -94,6 +95,8 @@ interface AppState {
   setCandidateEnabled: (id: string, enabled: boolean) => void
   /** 保存档案配置：资料、阈值与邮件设置 */
   saveCandidateProfile: (id: string, patch: CandidateProfilePatch) => void
+  /** 读简历预览：点开才查库，返回 null 表示这份简历还没解析 */
+  loadResume: (candidateId: string) => Promise<ResumeView | null>
 
   readIds: string[]
   markRead: (ids: string[]) => void
@@ -243,6 +246,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [apply]
   )
 
+  /** 简历预览按需读取：走统一数据服务，不直接碰 IPC */
+  const loadResume = useCallback(
+    (candidateId: string) => dbService.loadResume(candidateId),
+    []
+  )
+
   const markRead = useCallback(
     (ids: string[]) => {
       // 串行发：并发写同一批消息时，后返回的快照可能覆盖前一次的已读结果
@@ -360,6 +369,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       matchRuns,
       setCandidateEnabled,
       saveCandidateProfile,
+      loadResume,
       readIds,
       markRead,
       markAllRead,
@@ -397,6 +407,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCandidateId,
     setCandidateEnabled,
     saveCandidateProfile,
+    loadResume,
     readIds,
     markRead,
     markAllRead,

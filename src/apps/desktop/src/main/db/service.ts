@@ -135,6 +135,11 @@ export function registerDbIpc(): void {
     service.readAfterWrite(requireHandle(), queryOf(payload))
   )
 
+  registerInvoke('db:load-resume', (_e, payload) => {
+    if (!payload || typeof payload.candidateId !== 'string') return null
+    return service.readResume(requireHandle(), payload.candidateId)
+  })
+
   registerInvoke('db:mark-conversation-read', (_e, payload) => {
     const h = requireHandle()
     const query = queryOf(payload?.query)
