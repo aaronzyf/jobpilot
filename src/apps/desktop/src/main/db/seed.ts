@@ -1,4 +1,5 @@
 import type { Verdict } from '@core'
+import { resumeDocumentSeeds, resumeItemSeeds } from './resumeSeed'
 import { schema, type DatabaseHandle } from './index'
 
 /**
@@ -1246,6 +1247,17 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
   // 收藏：mock 里只有 j2 被收藏
   const bookmarkRows = [{ jobId: 'j2', createdAt: t.daysAgo(1) }]
 
+  // 简历正文：解析结果与时间线条目
+  const resumeDocumentRows: (typeof schema.resumeDocuments.$inferInsert)[] =
+    resumeDocumentSeeds.map((doc) => ({
+      ...doc,
+      createdAt: new Date(base),
+      updatedAt: new Date(base)
+    }))
+  const resumeItemRows: (typeof schema.resumeItems.$inferInsert)[] = resumeItemSeeds.map(
+    (item) => ({ ...item })
+  )
+
   const insertAll = sqlite.transaction(() => {
     db.insert(schema.candidates).values(candidateRows).run()
     db.insert(schema.sources).values(sourceRows).run()
@@ -1261,6 +1273,8 @@ export function seedIfEmpty(handle: DatabaseHandle): boolean {
     db.insert(schema.savedViews).values(savedViewRows).run()
     db.insert(schema.llmUsage).values(llmRows).run()
     db.insert(schema.settings).values(settingRows).run()
+    db.insert(schema.resumeDocuments).values(resumeDocumentRows).run()
+    db.insert(schema.resumeItems).values(resumeItemRows).run()
   })
   insertAll()
 

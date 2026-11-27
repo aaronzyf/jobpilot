@@ -60,6 +60,8 @@ export function clearBusinessTables(handle: DatabaseHandle): void {
     'saved_views',
     'llm_usage',
     'settings',
+    'resume_items',
+    'resume_documents',
     'candidates'
   ]
   handle.sqlite.transaction(() => {

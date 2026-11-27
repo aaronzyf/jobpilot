@@ -9,6 +9,9 @@ import type {
   MessageDirection,
   RemoteType,
   Region,
+  ResumeContact,
+  ResumeEntryKind,
+  ResumeSkillGroup,
   SubmitChannel,
   Verdict
 } from '../../../../../packages/core/src/domain/types'
@@ -53,6 +56,59 @@ export const candidates = sqliteTable('candidates', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
 })
+
+// ---------------------------------------------------------------- 简历正文
+
+/**
+ * 简历解析结果。
+ *
+ * candidates 上的 resume_file / resume_pages 只是「这份简历叫什么、几页」，
+ * 这里存的是解析出来的内容本身：个人简介、求职意向、技术栈分组与时间线。
+ * 两者按 candidate_id 一一对应，档案换简历就整份替换。
+ */
+export const resumeDocuments = sqliteTable(
+  'resume_documents',
+  {
+    candidateId: text('candidate_id')
+      .primaryKey()
+      .references(() => candidates.id, { onDelete: 'cascade' }),
+    /** 个人简介 */
+    profile: text('profile').notNull().default(''),
+    /** 求职意向 */
+    intent: text('intent').notNull().default(''),
+    /** 技术栈分组 */
+    skills: text('skills', { mode: 'json' }).$type<ResumeSkillGroup[]>().notNull(),
+    /** 联系方式：电话、Telegram、主页 */
+    contact: text('contact', { mode: 'json' }).$type<ResumeContact>().notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
+  },
+  (t) => [index('idx_resume_docs_candidate').on(t.candidateId)]
+)
+
+/** 简历时间线：工作经历、项目、教育背景 */
+export const resumeItems = sqliteTable(
+  'resume_items',
+  {
+    id: text('id').primaryKey(),
+    candidateId: text('candidate_id')
+      .notNull()
+      .references(() => candidates.id, { onDelete: 'cascade' }),
+    kind: text('kind').$type<ResumeEntryKind>().notNull(),
+    /** 公司 / 项目 / 学校 */
+    title: text('title').notNull(),
+    /** 职位 */
+    subtitle: text('subtitle').notNull().default(''),
+    /** 时间区间，如 2024.01 – 2025.04 */
+    period: text('period').notNull().default(''),
+    /** 技术栈 */
+    stack: text('stack').notNull().default(''),
+    /** 要点，逐条列出 */
+    highlights: text('highlights', { mode: 'json' }).$type<string[]>().notNull(),
+    position: integer('position').notNull().default(0)
+  },
+  (t) => [index('idx_resume_items_candidate').on(t.candidateId, t.position)]
+)
 
 // ---------------------------------------------------------------- 渠道
 

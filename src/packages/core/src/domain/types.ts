@@ -217,6 +217,27 @@ export interface Interview {
   note: string
 }
 
+// ---------------------------------------------------------------- 简历正文
+
+/**
+ * 简历正文里的条目类型。
+ * 工作经历、项目、教育背景三类：结构相同，只是渲染时的标题层级不同。
+ */
+export type ResumeEntryKind = 'experience' | 'project' | 'education'
+
+/** 简历里的联系方式。邮箱在 candidates 表，这里放电话、Telegram、主页这类 */
+export interface ResumeContact {
+  phone?: string
+  telegram?: string
+  site?: string
+}
+
+/** 技术栈分组：一组技能一个名字，如「前端」「移动端」 */
+export interface ResumeSkillGroup {
+  group: string
+  items: string[]
+}
+
 // ---------------------------------------------------------------- 求职者配置写入
 
 /** 邮件收发端点。host 为空表示未配置，落库时写 null */

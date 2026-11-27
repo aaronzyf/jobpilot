@@ -21,6 +21,11 @@ test-results/
 # 本地验证截图只留在本机；README 用的截图在 docs/screenshots/ 入库
 /screenshots/
 
+# 个人简历原件：内容已解析进种子数据，原件含个人信息，不入库
+/张永富-全栈工程师-简历.pdf
+*.pdf
+!docs/**/*.pdf
+
 # 本地数据（开发期）
 *.db
 *.db-journal

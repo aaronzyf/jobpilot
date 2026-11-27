@@ -8,6 +8,9 @@ import type {
   InterviewStatus,
   RemoteType,
   Region,
+  ResumeContact,
+  ResumeEntryKind,
+  ResumeSkillGroup,
   SubmitChannel,
   Verdict
 } from './types'
@@ -61,6 +64,42 @@ export interface MatchRunView {
   at: number
   scanned: number
   added: number
+}
+
+/** 简历预览里的一条时间线记录：工作经历、项目或教育背景 */
+export interface ResumeItemView {
+  id: string
+  kind: ResumeEntryKind
+  /** 公司 / 项目 / 学校 */
+  title: string
+  /** 职位 */
+  subtitle: string
+  /** 时间区间，如 2024.01 – 2025.04 */
+  period: string
+  /** 技术栈 */
+  stack: string
+  /** 要点，逐条列出 */
+  highlights: string[]
+}
+
+/**
+ * 简历预览读模型。
+ *
+ * 文件元信息（文件名、页数、更新时间）来自候选人档案，
+ * 正文与时间线来自解析结果，这里把两者拼成一屏能渲染的形状。
+ */
+export interface ResumeView {
+  candidateId: string
+  file: string
+  pages: number
+  updatedAt: string
+  /** 个人简介 */
+  profile: string
+  /** 求职意向 */
+  intent: string
+  skills: ResumeSkillGroup[]
+  contact: ResumeContact
+  items: ResumeItemView[]
 }
 
 export interface JobMatchView {
