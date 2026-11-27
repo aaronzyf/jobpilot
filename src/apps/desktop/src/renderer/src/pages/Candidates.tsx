@@ -219,6 +219,7 @@ export function Candidates() {
           const isCurrent = c.id === candidate.id
           const run = matchRuns[c.id]
           const toggleEnabled = () => {
+            if (isCurrent && c.enabled) return
             setCandidateEnabled(c.id, !c.enabled)
             toast(
               t(c.enabled ? 'candidates.toastDisabled' : 'candidates.toastEnabled', {
@@ -263,9 +264,11 @@ export function Candidates() {
                   )}
                 >
                   <MenuItem onClick={() => setEditing(c)}>{t('candidates.editProfile')}</MenuItem>
-                  <MenuItem onClick={toggleEnabled}>
-                    {c.enabled ? t('candidates.disable') : t('candidates.enable')}
-                  </MenuItem>
+                  {!isCurrent || !c.enabled ? (
+                    <MenuItem onClick={toggleEnabled}>
+                      {c.enabled ? t('candidates.disable') : t('candidates.enable')}
+                    </MenuItem>
+                  ) : null}
                   <MenuItem onClick={() => toast(t('candidates.toastDuplicated'), 'success')}>
                     {t('candidates.duplicate')}
                   </MenuItem>
@@ -363,16 +366,26 @@ export function Candidates() {
                   <Pencil size={11} />
                   {t('common.edit')}
                 </Button>
-                <Button
-                  variant={c.enabled ? 'ghost' : 'outline'}
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={toggleEnabled}
-                  title={c.enabled ? t('candidates.disableHint') : t('candidates.enableHint')}
+                <span
+                  title={
+                    isCurrent && c.enabled
+                      ? t('candidates.currentCannotDisable')
+                      : c.enabled
+                        ? t('candidates.disableHint')
+                        : t('candidates.enableHint')
+                  }
                 >
-                  <Power size={11} />
-                  {c.enabled ? t('candidates.disable') : t('candidates.enable')}
-                </Button>
+                  <Button
+                    variant={c.enabled ? 'ghost' : 'outline'}
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={isCurrent && c.enabled}
+                    onClick={toggleEnabled}
+                  >
+                    <Power size={11} />
+                    {c.enabled ? t('candidates.disable') : t('candidates.enable')}
+                  </Button>
+                </span>
               </div>
             </Card>
           )

@@ -5,6 +5,7 @@ import {
   appendOutgoingMessage,
   bumpRevision,
   clearBusinessTables,
+  getSetting,
   markAllConversationsRead,
   markConversationRead,
   setBookmark,
@@ -95,6 +96,10 @@ export function setCandidateEnabled(
   id: string,
   enabled: boolean
 ): LoadResult {
+  // 当前档案必须始终可匹配，服务层再拦一道，避免绕过 UI 的调用把它禁掉
+  if (!enabled && getSetting<string>(handle, 'active_candidate_id') === id) {
+    return readAfterWrite(handle, query)
+  }
   return after(handle, query, () => updateCandidateEnabled(handle, id, enabled))
 }
 

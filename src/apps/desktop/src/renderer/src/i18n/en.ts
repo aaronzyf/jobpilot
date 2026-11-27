@@ -494,6 +494,7 @@ export const en: Dict = {
     enable: 'Enable',
     disableHint: 'Stop background matching for this profile; past results are kept',
     enableHint: 'Resume background matching for this profile',
+    currentCannotDisable: 'The active candidate cannot be disabled; switch profiles first',
     matchScan: 'Scanned {n} job{p}',
     matchPaused: 'Matching paused',
     notScanned: 'Not scanned yet',

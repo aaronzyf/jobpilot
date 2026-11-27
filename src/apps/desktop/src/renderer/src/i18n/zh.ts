@@ -492,6 +492,7 @@ export const zh = {
     enable: '启用',
     disableHint: '停止该档案的后台匹配，历史结果保留',
     enableHint: '恢复该档案的后台匹配',
+    currentCannotDisable: '当前求职者不能禁用，请先切换其他档案',
     matchScan: '已扫描 {n} 个岗位',
     matchPaused: '匹配已暂停',
     notScanned: '尚未扫描',
