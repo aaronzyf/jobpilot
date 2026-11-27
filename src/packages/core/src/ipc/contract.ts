@@ -1,4 +1,8 @@
-import type { ApplicationStatus, InterviewStatus } from '../domain/types'
+import type {
+  ApplicationStatus,
+  CandidateProfilePatch,
+  InterviewStatus
+} from '../domain/types'
 import type { AppSnapshot, LoadResult, MatchRunView, ViewQuery } from '../domain/view'
 
 /**
@@ -57,6 +61,10 @@ export interface InvokeContract {
   }
   'db:set-candidate-enabled': {
     req: { query: ViewQuery; id: string; enabled: boolean }
+    res: LoadResult
+  }
+  'db:set-candidate-profile': {
+    req: { query: ViewQuery; id: string; patch: CandidateProfilePatch }
     res: LoadResult
   }
   'db:reset': {

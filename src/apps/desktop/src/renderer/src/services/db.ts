@@ -1,6 +1,7 @@
 import type {
   AppSnapshot,
   ApplicationStatus,
+  CandidateProfilePatch,
   InterviewStatus,
   LoadResult,
   ViewQuery
@@ -49,6 +50,12 @@ export const dbService = {
 
   setCandidateEnabled: (query: ViewQuery, id: string, enabled: boolean): Promise<LoadResult> =>
     ipc.call('db:set-candidate-enabled', { query, id, enabled }),
+
+  setCandidateProfile: (
+    query: ViewQuery,
+    id: string,
+    patch: CandidateProfilePatch
+  ): Promise<LoadResult> => ipc.call('db:set-candidate-profile', { query, id, patch }),
 
   reset: (query: ViewQuery): Promise<LoadResult> => ipc.call('db:reset', query)
 }

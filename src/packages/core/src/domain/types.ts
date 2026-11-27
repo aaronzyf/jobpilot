@@ -216,3 +216,33 @@ export interface Interview {
   /** 对方附的说明与准备要求 */
   note: string
 }
+
+// ---------------------------------------------------------------- 求职者配置写入
+
+/** 邮件收发端点。host 为空表示未配置，落库时写 null */
+export interface MailEndpoint {
+  host: string
+  port: number
+}
+
+/** POP3 收信端点。enabled 只表示是否启用拉取，不代表已连通 */
+export interface Pop3Endpoint extends MailEndpoint {
+  enabled: boolean
+}
+
+/**
+ * 求职者档案配置的可写部分。
+ * 只覆盖弹窗里能改的字段，resumeFile、stats、enabled 等不在其中。
+ */
+export interface CandidateProfilePatch {
+  name: string
+  headline: string
+  location: string
+  languages: string[]
+  note: string
+  thresholds: { auto: number; reject: number }
+  dailyCap: number
+  email: string
+  smtp: MailEndpoint | null
+  pop3: Pop3Endpoint | null
+}

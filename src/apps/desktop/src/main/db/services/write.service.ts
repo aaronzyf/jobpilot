@@ -1,4 +1,10 @@
-import type { ApplicationStatus, InterviewStatus, LoadResult, ViewQuery } from '@core'
+import type {
+  ApplicationStatus,
+  CandidateProfilePatch,
+  InterviewStatus,
+  LoadResult,
+  ViewQuery
+} from '@core'
 import type { DatabaseHandle } from '../index'
 import { seedIfEmpty } from '../seed'
 import {
@@ -12,6 +18,7 @@ import {
   setCandidateEnabled as updateCandidateEnabled,
   setSetting,
   updateApplicationStatus,
+  updateCandidateProfile,
   updateInterviewStatus
 } from '../repositories'
 import { readAfterWrite } from './read.service'
@@ -101,6 +108,16 @@ export function setCandidateEnabled(
     return readAfterWrite(handle, query)
   }
   return after(handle, query, () => updateCandidateEnabled(handle, id, enabled))
+}
+
+/** 保存档案配置：弹窗里的资料、阈值与邮件设置一次性落库 */
+export function setCandidateProfile(
+  handle: DatabaseHandle,
+  query: ViewQuery,
+  id: string,
+  patch: CandidateProfilePatch
+): LoadResult {
+  return after(handle, query, () => updateCandidateProfile(handle, id, patch))
 }
 
 /** 清空业务表并重新灌种子 */

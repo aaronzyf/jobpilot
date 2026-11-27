@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm'
+import type { CandidateProfilePatch } from '@core'
 import type { DatabaseHandle } from '../index'
 import { schema } from '../index'
 
@@ -43,6 +44,38 @@ export function setCandidateEnabled(
   handle.db
     .update(schema.candidates)
     .set({ enabled, updatedAt: new Date() })
+    .where(eq(schema.candidates.id, id))
+    .run()
+}
+
+/**
+ * 写档案配置：只改弹窗里可编辑的字段。
+ * smtp / pop3 的 host 为空时落 null，表示「未配置」而不是空字符串。
+ */
+export function updateCandidateProfile(
+  handle: DatabaseHandle,
+  id: string,
+  patch: CandidateProfilePatch
+): void {
+  handle.db
+    .update(schema.candidates)
+    .set({
+      name: patch.name,
+      headline: patch.headline,
+      location: patch.location,
+      languages: patch.languages,
+      note: patch.note,
+      thresholdAuto: patch.thresholds.auto,
+      thresholdReject: patch.thresholds.reject,
+      dailyCap: patch.dailyCap,
+      email: patch.email,
+      smtpHost: patch.smtp?.host ?? null,
+      smtpPort: patch.smtp?.port ?? null,
+      pop3Host: patch.pop3?.host ?? null,
+      pop3Port: patch.pop3?.port ?? null,
+      pop3Enabled: patch.pop3?.enabled ?? false,
+      updatedAt: new Date()
+    })
     .where(eq(schema.candidates.id, id))
     .run()
 }

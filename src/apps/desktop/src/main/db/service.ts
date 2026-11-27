@@ -1,6 +1,12 @@
 import { app } from 'electron'
 import { join } from 'node:path'
-import type { ApplicationStatus, InterviewStatus, ViewKey, ViewQuery } from '@core'
+import type {
+  ApplicationStatus,
+  CandidateProfilePatch,
+  InterviewStatus,
+  ViewKey,
+  ViewQuery
+} from '@core'
 import { registerInvoke } from '../ipc'
 import { requestMatching } from '../matching/engine'
 import { openDatabase, type DatabaseHandle } from './index'
@@ -65,6 +71,56 @@ function queryOf(value: unknown): ViewQuery {
     ...q,
     page: q.page && PAGES.includes(q.page) ? q.page : 'dashboard'
   }
+}
+
+/**
+ * 档案配置补丁的校验。IPC 传来的是未知形状：
+ * 这里只做类型与范围检查，缺字段就整份拒绝，避免写进半截数据。
+ */
+function patchOf(value: unknown): CandidateProfilePatch | null {
+  if (!value || typeof value !== 'object') return null
+  const p = value as Partial<CandidateProfilePatch>
+  if (typeof p.name !== 'string' || !p.name.trim()) return null
+  if (typeof p.headline !== 'string' || typeof p.location !== 'string') return null
+  if (!Array.isArray(p.languages) || p.languages.some((l) => typeof l !== 'string')) return null
+  if (typeof p.note !== 'string' || typeof p.email !== 'string') return null
+  if (typeof p.dailyCap !== 'number' || !Number.isInteger(p.dailyCap) || p.dailyCap <= 0)
+    return null
+  const t = p.thresholds
+  if (!t || typeof t !== 'object') return null
+  const auto = (t as { auto?: unknown }).auto
+  const reject = (t as { reject?: unknown }).reject
+  if (typeof auto !== 'number' || typeof reject !== 'number') return null
+  if (auto < 0 || auto > 100 || reject < 0 || reject > 100) return null
+  const smtp = endpointOf(p.smtp)
+  const pop3 = endpointOf(p.pop3)
+  if (p.smtp != null && !smtp) return null
+  if (p.pop3 != null && !pop3) return null
+  if (pop3 && typeof (p.pop3 as { enabled?: unknown }).enabled !== 'boolean') return null
+  return {
+    name: p.name.trim(),
+    headline: p.headline,
+    location: p.location,
+    languages: p.languages,
+    note: p.note,
+    thresholds: { auto, reject },
+    dailyCap: p.dailyCap,
+    email: p.email,
+    smtp,
+    pop3: pop3 ? { ...pop3, enabled: (p.pop3 as { enabled: boolean }).enabled } : null
+  }
+}
+
+/** 邮件端点：host 为空即视为未配置 */
+function endpointOf(value: unknown): { host: string; port: number } | null {
+  if (!value || typeof value !== 'object') return null
+  const v = value as { host?: unknown; port?: unknown }
+  if (typeof v.host !== 'string') return null
+  if (typeof v.port !== 'number' || !Number.isInteger(v.port)) return null
+  if (v.port < 1 || v.port > 65535) return null
+  const host = v.host.trim()
+  if (!host) return null
+  return { host, port: v.port }
 }
 
 /**
@@ -138,6 +194,15 @@ export function registerDbIpc(): void {
     const result = service.setCandidateEnabled(h, query, payload.id, payload.enabled)
     requestMatching()
     return result
+  })
+
+  registerInvoke('db:set-candidate-profile', (_e, payload) => {
+    const h = requireHandle()
+    const query = queryOf(payload?.query)
+    if (!payload || typeof payload.id !== 'string') return service.readAfterWrite(h, query)
+    const patch = patchOf(payload.patch)
+    if (!patch) return service.readAfterWrite(h, query)
+    return service.setCandidateProfile(h, query, payload.id, patch)
   })
 
   registerInvoke('db:reset', (_e, payload) => {

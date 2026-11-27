@@ -11,6 +11,7 @@ import {
 import type {
   AppSnapshot,
   ApplicationStatus,
+  CandidateProfilePatch,
   InterviewStatus,
   JobView,
   CandidateView,
@@ -91,6 +92,8 @@ interface AppState {
   /** 后台匹配每轮摘要，按档案 id 索引 */
   matchRuns: SidebarSnapshot['matchRuns']
   setCandidateEnabled: (id: string, enabled: boolean) => void
+  /** 保存档案配置：资料、阈值与邮件设置 */
+  saveCandidateProfile: (id: string, patch: CandidateProfilePatch) => void
 
   readIds: string[]
   markRead: (ids: string[]) => void
@@ -233,6 +236,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [apply]
   )
 
+  const saveCandidateProfile = useCallback(
+    (id: string, patch: CandidateProfilePatch) => {
+      void apply((q) => dbService.setCandidateProfile(q, id, patch))
+    },
+    [apply]
+  )
+
   const markRead = useCallback(
     (ids: string[]) => {
       // 串行发：并发写同一批消息时，后返回的快照可能覆盖前一次的已读结果
@@ -349,6 +359,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCandidateId,
       matchRuns,
       setCandidateEnabled,
+      saveCandidateProfile,
       readIds,
       markRead,
       markAllRead,
@@ -385,6 +396,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     candidate,
     setCandidateId,
     setCandidateEnabled,
+    saveCandidateProfile,
     readIds,
     markRead,
     markAllRead,
