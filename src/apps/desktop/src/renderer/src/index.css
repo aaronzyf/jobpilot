@@ -196,11 +196,6 @@ button {
   -webkit-app-region: no-drag;
 }
 
-/* macOS 红绿灯占位，避免和侧边栏品牌区重叠 */
-[data-platform='darwin'] .mac-inset {
-  padding-left: 78px;
-}
-
 /* Windows 自绘标题栏的窗口按钮在右上角，右侧留出空间 */
 [data-platform='win32'] .win-inset {
   padding-right: 148px;

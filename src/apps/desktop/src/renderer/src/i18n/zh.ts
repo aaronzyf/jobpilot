@@ -87,6 +87,8 @@ export const zh = {
   sidebar: {
     channels: '渠道',
     manage: '管理',
+    collapse: '折叠侧栏',
+    expand: '展开侧栏',
     needLogin: '{n} 个渠道需重新登录',
     currentCandidate: '当前求职者',
     profiles: '求职档案',

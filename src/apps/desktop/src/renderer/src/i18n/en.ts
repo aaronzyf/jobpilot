@@ -89,6 +89,8 @@ export const en: Dict = {
   sidebar: {
     channels: 'Sources',
     manage: 'Manage',
+    collapse: 'Collapse sidebar',
+    expand: 'Expand sidebar',
     needLogin: '{n} source{p} need signing in again',
     currentCandidate: 'Current candidate',
     profiles: 'Profiles',
